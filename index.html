@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>실시간 멀티 텔레스트레이션</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; }
+        body { background-color: #f0f4f8; margin: 0; padding: 15px; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #2c3e50; }
+        .container { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); width: 100%; max-width: 560px; text-align: center; }
+        h1 { margin: 0 0 10px; font-size: 1.8em; color: #34495e; }
+        h2 { margin: 0 0 15px; font-size: 1.4em; }
+        .hidden { display: none !important; }
+        input[type="text"], select, button { padding: 12px 16px; font-size: 16px; margin: 8px 0; border-radius: 10px; border: 1px solid #dce1e7; width: 100%; }
+        input[type="text"]:focus, select:focus { outline: none; border-color: #3498db; }
+        button { background-color: #3498db; color: white; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; }
+        button:hover { background-color: #2980b9; transform: translateY(-1px); }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; transform: none; }
+        .btn-green { background-color: #2ecc71; }
+        .btn-green:hover { background-color: #27ae60; }
+        .btn-orange { background-color: #e67e22; }
+        .btn-orange:hover { background-color: #d35400; }
+        .btn-purple { background-color: #8e44ad; }
+        .btn-purple:hover { background-color: #732d91; }
+
+        .random-avatar-box { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 10px 0 15px 0; background: #f8f9fa; padding: 10px; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .avatar-preview { font-size: 36px; width: 56px; height: 56px; background: white; border: 2px solid #3498db; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+        .btn-random-avatar { width: auto !important; margin: 0 !important; padding: 10px 16px !important; font-size: 14px !important; background-color: #6366f1; }
+        .btn-random-avatar:hover { background-color: #4f46e5; }
+
+        .room-box { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 12px 0; }
+        .room-badge { background: #e8f4fd; color: #2980b9; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 1.3em; letter-spacing: 2px; }
+        .btn-copy { width: auto !important; padding: 8px 14px !important; margin: 0 !important; font-size: 14px !important; background-color: #95a5a6; }
+        .btn-copy:hover { background-color: #7f8c8d; }
+
+        .settings-grid { display: flex; gap: 8px; justify-content: center; background: #f8f9fa; padding: 10px; border-radius: 12px; border: 1px solid #e9ecef; margin-bottom: 10px; flex-wrap: wrap; }
+        .settings-item { display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: bold; color: #34495e; }
+        .settings-item select { width: auto; padding: 6px 10px; font-size: 13px; margin: 0; }
+
+        .mode-badge-display { display: inline-block; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: bold; margin-bottom: 8px; }
+        .mode-normal { background: #e0f2fe; color: #0369a1; }
+        .mode-spy { background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; }
+        .mode-chaos { background: #ffedd5; color: #c2410c; border: 1px solid #fdba74; }
+
+        .player-list { list-style: none; padding: 0; margin: 10px 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+        .player-list li { background: #f8f9fa; border: 1px solid #e9ecef; padding: 8px 14px; border-radius: 20px; font-weight: bold; font-size: 0.95em; display: flex; align-items: center; gap: 6px; }
+
+        .role-banner { padding: 8px 12px; border-radius: 10px; font-weight: bold; font-size: 14px; margin-bottom: 8px; }
+        .role-spy { background: #3b0764; color: #f3e8ff; border: 2px solid #a855f7; animation: pulse 2s infinite; }
+        .role-citizen { background: #ecfdf5; color: #065f46; border: 1px solid #6ee7b7; }
+        .role-chaos { background: #fff7ed; color: #9a3412; border: 1px solid #fdba74; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.4); } 70% { box-shadow: 0 0 0 8px rgba(168, 85, 247, 0); } 100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); } }
+
+        .chat-container { border: 1px solid #dce1e7; border-radius: 12px; background: #f8f9fa; padding: 10px; margin-top: 10px; text-align: left; }
+        .chat-messages { height: 90px; overflow-y: auto; font-size: 13px; margin-bottom: 8px; padding-right: 5px; display: flex; flex-direction: column; gap: 4px; }
+        .chat-msg { background: white; padding: 5px 10px; border-radius: 8px; border: 1px solid #e9ecef; }
+        .chat-input-row { display: flex; gap: 6px; margin: 0; }
+        .chat-input-row input { margin: 0; padding: 8px; font-size: 13px; }
+        .chat-input-row button { width: 65px; margin: 0; padding: 8px; font-size: 13px; }
+
+        .clue-box { background: #fff3cd; border: 2px dashed #ffc107; padding: 10px; border-radius: 12px; margin: 6px 0; font-size: 1.2em; font-weight: bold; color: #856404; }
+        .rule-warning { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: bold; margin-bottom: 6px; }
+        .timer-box { font-size: 1.05em; font-weight: bold; color: #e74c3c; margin-bottom: 6px; }
+        canvas { border: 2px solid #dfe6e9; border-radius: 12px; cursor: crosshair; background: #ffffff; touch-action: none; max-width: 100%; margin: 4px 0; }
+
+        .palette-container { background: #f8f9fa; border: 2px solid #cbd5e1; border-radius: 12px; padding: 8px; margin-bottom: 6px; }
+        .tools { display: flex; gap: 6px; justify-content: center; align-items: center; flex-wrap: wrap; }
+        .tools button { width: auto; padding: 6px 12px; font-size: 13px; margin: 0; background-color: #64748b; }
+        .tools button.active { background-color: #1e293b; box-shadow: 0 0 0 2px #38bdf8; }
+        .color-btn { width: 32px !important; height: 32px; padding: 0 !important; border-radius: 50% !important; border: 2px solid #fff !important; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer; }
+        .color-btn.active-color { border: 3px solid #f59e0b !important; transform: scale(1.15); }
+        #color-picker { width: 34px; height: 34px; border: 2px solid #fff; border-radius: 50%; cursor: pointer; padding: 0; background: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+
+        .brush-size-bar { display: flex; align-items: center; justify-content: center; gap: 10px; background: #fff; padding: 6px 14px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 6px; font-size: 13px; font-weight: bold; color: #555; }
+        .brush-size-bar input[type="range"] { width: 120px; margin: 0; cursor: pointer; }
+        .preview-img { max-width: 100%; max-height: 200px; border: 2px solid #dfe6e9; border-radius: 12px; margin: 6px 0; background: #fff; }
+
+        .sketchbook-viewer { background: #fdfdfd; border: 2px solid #dfe6e9; border-radius: 16px; padding: 12px; min-height: 290px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: inset 0 0 10px rgba(0,0,0,0.02); margin-bottom: 8px; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #7f8c8d; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 8px; }
+        .page-body { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .big-word-card { background: #fff3cd; border: 2px dashed #ffc107; padding: 18px; border-radius: 14px; font-size: 1.4em; font-weight: bold; color: #856404; width: 100%; margin: 8px 0; }
+        .sketchbook-nav { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 6px; }
+        .sketchbook-nav button { width: 48%; margin: 0; padding: 8px; font-size: 14px; }
+        .book-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 8px; }
+        .book-tabs button { width: auto; white-space: nowrap; padding: 7px 10px; font-size: 12px; background: #ecf0f1; color: #2c3e50; }
+        .book-tabs button.active { background: #3498db; color: white; }
+
+        .summary-box { background: #f8f9fa; border: 2px solid #cbd5e1; border-radius: 14px; padding: 12px; margin-bottom: 8px; text-align: left; }
+        .summary-row { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 6px; font-size: 13px; }
+        .summary-steps-preview { display: flex; gap: 6px; overflow-x: auto; padding: 5px 0; margin-top: 8px; }
+        .summary-step-item { min-width: 80px; background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 5px; text-align: center; font-size: 11px; }
+        .summary-step-item img { width: 70px; height: 50px; object-fit: cover; border-radius: 4px; margin-top: 3px; }
+        .spy-reveal-box { background: #f3e8ff; border: 2px solid #a855f7; border-radius: 12px; padding: 10px; margin-top: 8px; text-align: center; font-weight: bold; color: #581c87; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 1. 로비 -->
+    <div id="screen-lobby">
+        <h1>🎨 텔레스트레이션</h1>
+        <p style="color: #7f8c8d; margin-bottom: 12px;">친구들과 실시간 그림 전달 게임!</p>
+
+        <input type="text" id="nickname" placeholder="닉네임을 입력하세요 (예: 수현)" maxlength="10">
+
+        <div class="random-avatar-box">
+            <div class="avatar-preview" id="avatar-preview">🚀</div>
+            <div style="text-align: left;">
+                <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">내 프로필 아이콘</div>
+                <button type="button" class="btn-random-avatar" id="btn-random-avatar">🎲 프사 랜덤 변경</button>
+            </div>
+        </div>
+
+        <button class="btn-green" id="btn-create-room">새 방 만들기</button>
+        <div style="margin: 10px 0; color: #bdc3c7; font-size: 14px;">── 또는 방 코드로 입장 ──</div>
+        <div style="display: flex; gap: 8px;">
+            <input type="text" id="room-code-input" placeholder="방 코드 4자리" maxlength="4" style="text-transform: uppercase; margin: 0;">
+            <button id="btn-join-room" style="width: 40%; margin: 0;">입장</button>
+        </div>
+    </div>
+
+    <!-- 2. 대기실 -->
+    <div id="screen-waiting" class="hidden">
+        <h2>대기실</h2>
+        <div class="room-box">
+            <span class="room-badge" id="display-room-code"></span>
+            <button class="btn-copy" id="btn-copy-code">코드 복사</button>
+        </div>
+
+        <div id="guest-mode-indicator" class="mode-badge-display mode-normal">🎮 일반 모드</div>
+
+        <div id="host-settings" class="settings-grid hidden">
+            <div class="settings-item">
+                <span>🎮 모드:</span>
+                <select id="game-mode-select">
+                    <option value="normal" selected>일반 모드</option>
+                    <option value="chaos">🤪 대환장 모드 (엉뚱한 제시어)</option>
+                    <option value="spy">🕵️ 스파이 모드 (소수 추천)</option>
+                </select>
+            </div>
+            <div class="settings-item">
+                <span>⏱️ 시간:</span>
+                <select id="time-limit-select">
+                    <option value="30">30초</option>
+                    <option value="45">45초</option>
+                    <option value="60" selected>60초</option>
+                </select>
+            </div>
+        </div>
+
+        <p style="font-size: 13px; color: #7f8c8d; margin: 4px 0;">친구들에게 방 코드를 알려주세요! (최소 2명, 스파이 모드는 3명 이상 추천)</p>
+        <ul class="player-list" id="player-list"></ul>
+
+        <div class="chat-container">
+            <div class="chat-messages" id="chat-messages"></div>
+            <div class="chat-input-row">
+                <input type="text" id="chat-input" placeholder="메시지를 입력하세요..." maxlength="50">
+                <button id="btn-send-chat">전송</button>
+            </div>
+        </div>
+
+        <button id="btn-start-game" class="btn-green hidden" style="margin-top:12px;">모두 모였어요! 게임 시작</button>
+        <p id="waiting-host-msg" style="color: #95a5a6; font-size: 13px; margin-top:10px;">방장이 게임을 시작할 때까지 기다려주세요...</p>
+    </div>
+
+    <!-- 3. 게임 진행 -->
+    <div id="screen-game" class="hidden">
+        <div id="my-role-banner" class="role-banner hidden"></div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span id="round-indicator" style="font-weight: bold; color: #3498db; font-size: 14px;">라운드 1 / 3</span>
+            <span id="submit-status" style="font-size: 12px; color: #7f8c8d;">제출 현황: 0/0</span>
+        </div>
+        <div class="timer-box" id="timer-display">⏳ 남은 시간: 60초</div>
+
+        <div id="mode-draw" class="hidden">
+            <div class="rule-warning">⚠️ 주의: 글자는 그림에 적으면 안 됩니다! (오직 그림으로만 표현하세요)</div>
+            <p style="margin: 2px 0; font-size: 13px;">제시어를 그림으로 표현하세요!</p>
+            <div class="clue-box" id="draw-clue-text">제시어</div>
+
+            <div class="palette-container">
+                <div class="tools">
+                    <button class="color-btn active-color" style="background:#2c3e50;" data-color="#2c3e50" title="진회색"></button>
+                    <button class="color-btn" style="background:#e74c3c;" data-color="#e74c3c" title="빨강"></button>
+                    <button class="color-btn" style="background:#3498db;" data-color="#3498db" title="파랑"></button>
+                    <button class="color-btn" style="background:#2ecc71;" data-color="#2ecc71" title="초록"></button>
+                    <button class="color-btn" style="background:#f1c40f;" data-color="#f1c40f" title="노랑"></button>
+                    <button class="color-btn" style="background:#9b59b6;" data-color="#9b59b6" title="보라"></button>
+                    <input type="color" id="color-picker" value="#3498db" title="커스텀 색상 선택">
+                    <button id="btn-eraser">지우개</button>
+                    <button id="btn-clear" style="background:#95a5a6;">전체삭제</button>
+                </div>
+                <div class="brush-size-bar">
+                    <span>🖌️ 굵기</span>
+                    <input type="range" id="brush-size-slider" min="1" max="25" value="4">
+                    <span id="brush-size-label" style="min-width: 30px; color: #3498db;">4px</span>
+                </div>
+            </div>
+
+            <canvas id="canvas" width="420" height="240"></canvas>
+            <button id="btn-submit-draw" class="btn-green" style="margin-top: 4px;">그림 제출하기</button>
+        </div>
+
+        <div id="mode-guess" class="hidden">
+            <p style="margin: 4px 0; font-size: 14px;">이 그림은 무엇을 표현한 걸까요?</p>
+            <img id="guess-image" class="preview-img" src="" alt="이전 플레이어의 그림">
+            <input type="text" id="guess-input" placeholder="정답(단어)을 입력하세요" maxlength="20">
+            <button id="btn-submit-guess" class="btn-orange">단어 제출하기</button>
+        </div>
+
+        <div id="mode-wait-turn" class="hidden" style="padding: 15px 0;">
+            <h3>✅ 제출 완료!</h3>
+            <div id="waiting-status-board" style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 10px; padding: 12px; margin: 10px 0; font-size: 14px; text-align: left;">
+                <p style="margin: 0; font-weight: bold; color: #2c3e50; text-align: center;">🔄 친구들 플레이 현황</p>
+                <div id="live-progress-list" style="margin-top: 8px; display: flex; flex-direction: column; gap: 4px;"></div>
+            </div>
+            <p style="color: #7f8c8d; font-size: 13px;">모두 완료될 때까지 기다려주세요...</p>
+        </div>
+
+        <div class="chat-container">
+            <div class="chat-messages" id="game-chat-messages"></div>
+            <div class="chat-input-row">
+                <input type="text" id="game-chat-input" placeholder="대화 나누기..." maxlength="50">
+                <button id="btn-send-game-chat">전송</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. 결과 발표 -->
+    <div id="screen-result" class="hidden">
+        <h2>📖 스케치북 결과 구경하기</h2>
+        <p style="font-size: 12px; color: #7f8c8d; margin-bottom: 6px;" id="result-guide-msg">방장이 선택한 스케치북을 다 함께 감상하세요!</p>
+
+        <div class="book-tabs" id="book-tabs"></div>
+
+        <div class="sketchbook-viewer" id="sketchbook-viewer-box">
+            <div class="page-header">
+                <span id="page-author" style="font-weight: bold; color: #2c3e50;">작성자</span>
+                <span id="page-counter">1 / 4 페이지</span>
+            </div>
+            <div class="page-body" id="page-body"></div>
+            <div class="sketchbook-nav" id="sketchbook-nav-container">
+                <button id="btn-prev-page" style="background-color: #7f8c8d;">⬅️ 이전 페이지</button>
+                <button id="btn-next-page">다음 페이지 ➡️</button>
+            </div>
+        </div>
+
+        <div id="summary-view-box" class="hidden">
+            <div class="summary-box">
+                <h3 style="margin: 0 0 8px 0; font-size: 15px; color: #34495e; text-align: center;">📊 최종 요약 및 정답 비교</h3>
+                <div id="summary-rows-container"></div>
+
+                <div id="spy-reveal-section" class="hidden">
+                    <button id="btn-reveal-spy" class="btn-purple hidden" style="margin-top: 8px; padding: 8px; font-size: 14px;">🕵️ 이번 판 스파이 정체 공개하기!</button>
+                    <div id="spy-reveal-result" class="spy-reveal-box hidden"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-container" style="margin-top: 6px;">
+            <div class="chat-messages" id="result-chat-messages"></div>
+            <div class="chat-input-row">
+                <input type="text" id="result-chat-input" placeholder="다 함께 수다 떨기..." maxlength="50">
+                <button id="btn-send-result-chat">전송</button>
+            </div>
+        </div>
+
+        <button id="btn-play-again" class="btn-green hidden" style="margin-top: 6px;">다음 판 바로 시작하기 (대기실로)</button>
+        <button id="btn-restart" style="margin-top: 4px; background-color:#95a5a6;" class="hidden">처음 로비로 나가기</button>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyD3vtdGXBmT0AhhOnDhRxtVSKyvVagv1AY",
+        authDomain: "telestration-ac12f.firebaseapp.com",
+        databaseURL: "https://telestration-ac12f-default-rtdb.firebaseio.com",
+        projectId: "telestration-ac12f",
+        storageBucket: "telestration-ac12f.firebasestorage.app",
+        messagingSenderId: "383833654591",
+        appId: "1:383833654591:web:07d1665be65de375343f8a",
+        measurementId: "G-JT0ZJZ85QW"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    // 규칙이 "로그인한 사람만"일 때 필요한 자동(익명) 로그인. 화면에는 아무것도 안 떠요.
+    firebase.auth().signInAnonymously().catch(e => console.warn('익명 로그인 실패:', e.message));
+
+    const AVATAR_POOL = [
+        "🚀", "🍕", "🍔", "🍟", "🍩", "🍦", "🍉", "🍓", "🥑", "☕",
+        "⚽", "🏀", "🎮", "🎸", "🎧", "🎨", "🎬", "👑", "💎", "💡",
+        "🔥", "🌈", "⚡", "❄️", "🌸", "🌵", "🍀", "👻", "🤖", "👽",
+        "🤠", "🥳", "😎", "🤓", "🧐", "😈", "🤡", "🧙", "🥷", "🧛"
+    ];
+
+    // ===== 제시어 =====
+    // 일반 모드 / 스파이 모드: 아래 정직한 단어(BASE_WORDS)만 사용
+    const BASE_WORDS = [
+        // [생활용품 & 가전]
+        "선풍기", "스마트폰", "청소기", "세탁기", "전자레인지", "냉장고", "에어컨", "헤어드라이어",
+        "다리미", "가습기", "공기청정기", "믹서기", "커피머신", "토스터", "전기밥솥", "안마의자",
+        "빗자루", "쓰레기통", "휴지통", "옷걸이", "빨래건조대", "다리미판", "체중계", "손거울",
+        "빗", "칫솔", "치약", "샴푸", "린스", "바디워시", "수건", "욕조", "변기", "세면대",
+        "우산", "양산", "장화", "우의", "손목시계", "탁상시계", "알람시계", "벽시계", "모래시계",
+        "안경", "선글라스", "지갑", "동전지갑", "카드지갑", "백팩", "핸드백", "캐리어",
+        "베개", "이불", "매트리스", "커튼", "블라인드", "러그", "방석", "쿠션", "휴대폰케이스",
+        "충전기", "멀티탭", "이어폰", "헤드폰", "스피커", "보조배터리", "손전등", "건전지", "형광등",
+        "가위", "칼", "도마", "냄비", "프라이팬", "국자", "뒤집개", "집게", "수저세트", "젓가락",
+        "숟가락", "포크", "나이프", "그릇", "접시", "국그릇", "밥그릇", "컵", "머그컵", "텀블러",
+        "와인잔", "소주잔", "맥주잔", "유리병", "밀폐용기", "행주", "수세미", "고무장갑", "앞치마",
+
+        // [동물 & 곤충 & 생물]
+        "고슴도치", "펭귄", "북극곰", "판다", "코알라", "캥거루", "너구리", "사막여우",
+        "기린", "코끼리", "하마", "코뿔소", "얼룩말", "사자", "호랑이", "치타", "표범",
+        "하이에나", "늑대", "여우", "곰", "불곰", "스컹크", "수달", "비버", "다람쥐",
+        "청설모", "토끼", "햄스터", "기니피그", "족제비", "미어캣", "나무늘보", "오랑우탄",
+        "침팬지", "고릴라", "원숭이", "박쥐", "두더지", "카피바라", "독수리", "매", "부엉이",
+        "올빼미", "까마귀", "까치", "참새", "비둘기", "제비", "앵무새", "공작새", "타조",
+        "오리", "거위", "백조", "학", "홍학", "갈매기", "펠리컨", "닭", "병아리", "고양이",
+        "강아지", "상어", "고래", "돌고래", "범고래", "문어", "오징어", "낙지", "쭈꾸미",
+        "해파리", "불가사리", "거북이", "자라", "악어", "카멜레온", "이구아나", "도마뱀", "뱀",
+        "개구리", "두꺼비", "참돔", "참치", "연어", "광어", "우럭", "고등어", "갈치", "장어",
+        "나비", "벌", "모기", "파리", "잠자리", "사마귀", "메뚜기", "반딧불이", "무당벌레",
+
+        // [직업 & 인물]
+        "의사", "간호사", "약사", "한의사", "치과의사", "수의사", "경찰관", "소방관",
+        "군인", "요리사", "제빵사", "바리스타", "파티시에", "소믈리에", "선원", "어부",
+        "농부", "목수", "건축가", "인테리어 디자이너", "패션 디자이너", "웹디자이너", "일러스트레이터",
+        "만화가", "웹툰작가", "작가", "소설가", "시인", "기자", "아나운서", "프로듀서",
+        "영화감독", "배우", "가수", "아이돌", "개그맨", "모델", "유튜버", "크리에이터",
+        "프로게이머", "운동선수", "축구선수", "야구선수", "농구선수", "배구선수", "수영선수",
+        "피겨선수", "골프선수", "테니스선수", "복서", "씨름선수", "태권도선수", "체조선수",
+        "판사", "검사", "변호사", "탐정", "범죄자", "도둑", "해커", "비서", "회사원",
+        "세무사", "회계사", "은행원", "펀드매니저", "주식투자자", "공인중개사", "선생님", "교수",
+        "연구원", "과학자", "천문학자", "사서", "승무원", "조종사", "기관사", "택시기사",
+        "버스기사", "택배기사", "라이더", "정비사", "환경미화원", "경비원", "스턴트맨", "마술사",
+
+        // [속담 & 관용구]
+        "그림의 떡", "식은 죽 먹기", "누워서 떡 먹기", "소 귀에 경 읽기", "우물 안 개구리",
+        "고양이 목에 방울 달기", "호랑이도 제 말 하면 온다", "발 없는 말이 천리 간다",
+        "밑 빠진 독에 물 붓기", "원숭이도 나무에서 떨어진다", "시작이 반이다", "급할수록 돌아가라",
+        "고생 끝에 낙이 온다", "개구리 올챙이 적 생각 못 한다", "남의 떡이 더 커 보인다",
+        "벼는 익을수록 고개를 숙인다", "티끌 모아 태산", "소 잃고 외양간 고친다",
+        "배보다 배꼽이 더 크다", "등잔 밑이 어둡다", "바늘 도둑이 소 도둑 된다",
+        "백지장도 맞들면 낫다", "고래 싸움에 새우 등 터진다", "아니 땐 굴뚝에 연기 날까",
+
+        // [음식 & 디저트]
+        "탕후루", "붕어빵", "치킨과 맥주", "떡볶이", "마라탕", "삼겹살", "김밥", "라면 끓이기",
+        "아이스크림", "수박화채", "호떡", "솜사탕", "짜장면", "짬뽕", "탕수육", "볶음밥",
+        "피자", "햄버거", "초밥", "연어초밥", "타코야끼", "오코노미야끼", "크로플", "마카롱",
+        "케이크", "치즈케이크", "팥빙수", "계란후라이", "스크램블", "김치찌개", "된장찌개",
+        "부대찌개", "갈비탕", "설렁탕", "삼계탕", "냉면", "막국수", "칼국수", "수제비", "잔치국수",
+        "우동", "라멘", "소바", "족발", "보쌈", "양념치킨", "후라이드치킨", "찜닭", "닭갈비",
+        "곱창구이", "양꼬치", "훠궈", "마라상궈", "꿔바로우", "딤섬", "샌드위치", "토스트",
+        "베이글", "핫도그", "샐러드", "타코", "부리또", "스테이크", "파스타", "까르보나라",
+        "아메리카노", "카페라떼", "카푸치노", "바닐라라떼", "밀크티", "버블티", "레몬에이드",
+        "스무디", "식혜", "수정과", "콜라", "사이다", "맥주", "소주", "막걸리", "와인", "하이볼",
+
+        // [장소 & 건물 & 자연]
+        "에펠탑", "자유의 여신상", "피라미드", "스핑크스", "콜로세움", "타지마할", "만리장성",
+        "런던아이", "빅벤", "오페라하우스", "루브르박물관", "경복궁", "남산타워", "롯데월드타워",
+        "제주도", "한라산", "독도", "설악산", "지리산", "해운대", "경포대", "한강공원", "보라카이",
+        "하와이", "발리", "그랜드캐니언", "나이아가라폭포", "아마존강", "사하라사막", "알프스산맥",
+        "영화관", "놀이공원", "동물원", "식물원", "수족관", "미술관", "박물관", "도서관",
+        "백화점", "대형마트", "편의점", "다이소", "꽃집", "약국", "병원", "경찰서", "소방서",
+        "우체국", "은행", "시청", "주민센터", "법원", "공항", "기차역", "버스터미널", "항구",
+        "주유소", "호텔", "모텔", "펜션", "게스트하우스", "캠핑장", "PC방", "코인노래방", "볼링장",
+
+        // [행동 & 스포츠 & 취미]
+        "가위바위보", "줄다리기", "이어달리기", "축구 골키퍼", "농구 덩크슛", "야구 홈런",
+        "배구 스파이크", "테니스 서브", "배드민턴 스매시", "탁구 랠리", "골프 스윙", "볼링 스트라이크",
+        "당구 쓰리쿠션", "수영 자유형", "배영", "평영", "접영", "다이빙", "스키 타기", "스노보드",
+        "스케이트", "피겨스케이팅", "컬링", "서핑", "스케이트보드", "클라이밍", "번지점프",
+        "스카이다이빙", "패러글라이딩", "스쿠버다이빙", "낚시", "캠핑", "등산", "산책", "조깅",
+        "마라톤", "자전거 라이딩", "줄넘기", "훌라후프", "요가", "필라테스", "웨이트트레이닝",
+        "복싱", "태권도", "합기도", "유도", "검도", "레슬링", "역도", "양궁", "사격", "펜싱",
+        "사진 찍기", "셀카", "그림 그리기", "도자기 빚기", "요리하기", "베이킹", "뜨개질",
+        "독서", "영화보기", "노래 부르기", "기타 연주", "피아노 연주", "드럼 연주", "댄스", "마술",
+
+        // [판타지 & 우주 & 캐릭터]
+        "우주비행사", "로켓 발사", "인공위성", "우주정거장", "블랙홀", "웜홀", "초신성", "유성우",
+        "외계인", "비행접시", "UFO", "화성탐사선", "달 착륙", "무중력", "별자리", "북극성",
+        "마법사", "연금술사", "기사", "궁수", "암살자", "성기사", "흑마법사", "엘프", "드워프",
+        "오크", "트롤", "고블린", "드래곤", "피닉스", "유니콘", "페가수스", "인어", "요정",
+        "뱀파이어", "늑대인간", "좀비", "유령", "도깨비", "저승사자", "구미호", "타임머신",
+        "투명인간", "초능력", "염력", "텔레파시", "마법의 빗자루", "요술램프", "지니", "보물지도"
+    ];
+
+    // 대환장 모드 전용: 수식어/장소 + 단어를 조합한 엉뚱한 제시어 (예: "춤추는 모래시계")
+    const ADJECTIVES = ["귀여운", "화난", "졸린", "거대한", "아주 작은", "날 수 있는", "투명한", "반짝이는", "춤추는", "노래하는", "용감한", "엉뚱한", "초능력을 가진", "마법의", "수상한", "빛나는", "철 지난", "유명한", "길을 잃은", "잠자는"];
+    const PLACES = ["우주에서", "편의점에서", "학교에서", "바다 밑에서", "화성에서", "놀이공원에서", "무인도에서", "꿈속에서", "지하철 안에서", "정글 속에서"];
+
+    function generateChaosWordPool() {
+        let pool = [...BASE_WORDS];
+        ADJECTIVES.forEach(adj => {
+            BASE_WORDS.slice(0, 150).forEach(word => { pool.push(`${adj} ${word}`); });
+        });
+        PLACES.forEach(place => {
+            BASE_WORDS.slice(0, 100).forEach(word => { pool.push(`${place} ${word}`); });
+        });
+        return pool;
+    }
+
+    // 모드에 맞는 제시어 풀 선택: 대환장 = 조합 단어, 일반/스파이 = 정직한 단어만
+    function getWordPool(mode) {
+        return mode === 'chaos' ? generateChaosWordPool() : BASE_WORDS;
+    }
+
+    let myId = 'user_' + Math.random().toString(36).substr(2, 6);
+    let myName = '';
+    let myAvatar = AVATAR_POOL[Math.floor(Math.random() * AVATAR_POOL.length)];
+    let roomCode = '';
+    let isHost = false;
+    let currentRoomData = null;
+    let lastRenderedRound = -1;
+
+    let timerInterval = null;
+    let gameTimeLimit = 60;
+
+    let activeBookId = '';
+    let currentStepIndex = 0;
+
+    document.getElementById('avatar-preview').innerText = myAvatar;
+    document.getElementById('btn-random-avatar').addEventListener('click', () => {
+        let nextAvatar = myAvatar;
+        while (nextAvatar === myAvatar) {
+            nextAvatar = AVATAR_POOL[Math.floor(Math.random() * AVATAR_POOL.length)];
+        }
+        myAvatar = nextAvatar;
+        document.getElementById('avatar-preview').innerText = myAvatar;
+    });
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let brushColor = '#2c3e50';
+    let brushSize = 4;
+    let isEraserMode = false;
+
+    function initCanvas() {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+    }
+
+    function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const clientX = e.clientX ?? e.touches[0].clientX;
+        const clientY = e.clientY ?? e.touches[0].clientY;
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
+    }
+
+    canvas.addEventListener('mousedown', (e) => { isDrawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+    canvas.addEventListener('mousemove', (e) => {
+        if (!isDrawing) return;
+        const p = getPos(e);
+        ctx.strokeStyle = isEraserMode ? '#ffffff' : brushColor;
+        ctx.lineWidth = brushSize;
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+    });
+    canvas.addEventListener('mouseup', () => isDrawing = false);
+    canvas.addEventListener('mouseleave', () => isDrawing = false);
+
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); isDrawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }, { passive: false });
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!isDrawing) return;
+        const p = getPos(e);
+        ctx.strokeStyle = isEraserMode ? '#ffffff' : brushColor;
+        ctx.lineWidth = brushSize;
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+    }, { passive: false });
+    canvas.addEventListener('touchend', () => isDrawing = false);
+
+    document.querySelectorAll('.color-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active-color'));
+            btn.classList.add('active-color');
+            brushColor = btn.getAttribute('data-color');
+            isEraserMode = false;
+            document.getElementById('btn-eraser').classList.remove('active');
+        });
+    });
+
+    document.getElementById('color-picker').addEventListener('input', (e) => {
+        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active-color'));
+        brushColor = e.target.value;
+        isEraserMode = false;
+        document.getElementById('btn-eraser').classList.remove('active');
+    });
+
+    const sizeSlider = document.getElementById('brush-size-slider');
+    const sizeLabel = document.getElementById('brush-size-label');
+    sizeSlider.addEventListener('input', (e) => {
+        brushSize = parseInt(e.target.value, 10);
+        sizeLabel.innerText = `${brushSize}px`;
+    });
+
+    document.getElementById('btn-eraser').addEventListener('click', () => {
+        isEraserMode = true;
+        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active-color'));
+        document.getElementById('btn-eraser').classList.add('active');
+        if (brushSize < 12) {
+            brushSize = 16;
+            sizeSlider.value = 16;
+            sizeLabel.innerText = '16px';
+        }
+    });
+
+    document.getElementById('btn-clear').addEventListener('click', () => initCanvas());
+
+    document.getElementById('btn-copy-code').addEventListener('click', () => {
+        navigator.clipboard.writeText(roomCode).then(() => {
+            const btn = document.getElementById('btn-copy-code');
+            btn.innerText = '복사 완료! 🎉';
+            btn.style.backgroundColor = '#2ecc71';
+            setTimeout(() => {
+                btn.innerText = '코드 복사';
+                btn.style.backgroundColor = '#95a5a6';
+            }, 2000);
+        });
+    });
+
+    function showScreen(screenId) {
+        ['screen-lobby', 'screen-waiting', 'screen-game', 'screen-result'].forEach(id => {
+            document.getElementById(id).classList.add('hidden');
+        });
+        document.getElementById(screenId).classList.remove('hidden');
+    }
+
+    document.getElementById('btn-create-room').addEventListener('click', () => {
+        myName = document.getElementById('nickname').value.trim();
+        if (!myName) return alert('닉네임을 입력해주세요!');
+
+        roomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+        isHost = true;
+
+        db.ref(`rooms/${roomCode}`).set({
+            host: myId,
+            status: 'waiting',
+            gameMode: 'normal',
+            timeLimit: 60,
+            currentRound: 0,
+            players: { [myId]: { name: myName, avatar: myAvatar, order: 0 } }
+        }).then(() => listenRoom());
+    });
+
+    document.getElementById('btn-join-room').addEventListener('click', () => {
+        myName = document.getElementById('nickname').value.trim();
+        roomCode = document.getElementById('room-code-input').value.trim().toUpperCase();
+        if (!myName) return alert('닉네임을 입력해주세요!');
+        if (roomCode.length !== 4) return alert('4자리 방 코드를 입력해주세요!');
+
+        db.ref(`rooms/${roomCode}`).get().then((snapshot) => {
+            if (!snapshot.exists()) return alert('존재하지 않는 방 코드입니다.');
+            const data = snapshot.val();
+            if (data.status !== 'waiting') return alert('이미 시작되었거나 종료된 방입니다.');
+
+            const playerCount = Object.keys(data.players || {}).length;
+            db.ref(`rooms/${roomCode}/players`).update({
+                [myId]: { name: myName, avatar: myAvatar, order: playerCount }
+            }).then(() => listenRoom());
+        });
+    });
+
+    document.getElementById('game-mode-select').addEventListener('change', (e) => {
+        if (!isHost) return;
+        db.ref(`rooms/${roomCode}`).update({ gameMode: e.target.value });
+    });
+
+    document.getElementById('time-limit-select').addEventListener('change', (e) => {
+        if (!isHost) return;
+        const val = parseInt(e.target.value, 10);
+        db.ref(`rooms/${roomCode}`).update({ timeLimit: val });
+    });
+
+    document.getElementById('btn-start-game').addEventListener('click', () => {
+        const playerIds = Object.keys(currentRoomData.players).sort((a, b) => currentRoomData.players[a].order - currentRoomData.players[b].order);
+        const mode = currentRoomData.gameMode || 'normal';
+        const shuffledWords = [...getWordPool(mode)].sort(() => Math.random() - 0.5);
+
+        let spyId = null;
+        if (mode === 'spy') {
+            spyId = playerIds[Math.floor(Math.random() * playerIds.length)];
+        }
+
+        const books = {};
+        playerIds.forEach((pid, idx) => {
+            books[pid] = {
+                ownerName: currentRoomData.players[pid].name,
+                steps: {
+                    0: { type: 'word', author: '랜덤 제시어', content: shuffledWords[idx % shuffledWords.length] }
+                }
+            };
+        });
+
+        db.ref(`rooms/${roomCode}`).update({
+            status: 'playing',
+            currentRound: 1,
+            spyId: spyId,
+            spyRevealed: false,
+            books: books,
+            submissions: null
+        });
+    });
+
+    document.getElementById('btn-play-again').addEventListener('click', () => {
+        lastRenderedRound = -1;
+        db.ref(`rooms/${roomCode}`).update({
+            status: 'waiting',
+            currentRound: 0,
+            spyId: null,
+            spyRevealed: false,
+            books: null,
+            submissions: null,
+            resultState: null
+        });
+    });
+
+    document.getElementById('btn-reveal-spy').addEventListener('click', () => {
+        if (!isHost) return;
+        db.ref(`rooms/${roomCode}`).update({ spyRevealed: true });
+    });
+
+    document.getElementById('btn-submit-draw').addEventListener('click', submitTurn);
+    document.getElementById('btn-submit-guess').addEventListener('click', submitTurn);
+    document.getElementById('btn-restart').addEventListener('click', () => location.reload());
+
+    function sendChat(inputElId) {
+        const input = document.getElementById(inputElId);
+        const text = input.value.trim();
+        if (!text) return;
+
+        db.ref(`rooms/${roomCode}/chats`).push({
+            name: myName,
+            avatar: myAvatar,
+            message: text,
+            time: Date.now()
+        });
+        input.value = '';
+    }
+
+    document.getElementById('btn-send-chat').addEventListener('click', () => sendChat('chat-input'));
+    document.getElementById('chat-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChat('chat-input'); });
+
+    document.getElementById('btn-send-game-chat').addEventListener('click', () => sendChat('game-chat-input'));
+    document.getElementById('game-chat-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChat('game-chat-input'); });
+
+    document.getElementById('btn-send-result-chat').addEventListener('click', () => sendChat('result-chat-input'));
+    document.getElementById('result-chat-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChat('result-chat-input'); });
+
+    function listenRoom() {
+        db.ref(`rooms/${roomCode}`).on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+            currentRoomData = data;
+            gameTimeLimit = data.timeLimit || 60;
+            const mode = data.gameMode || 'normal';
+
+            const playerIds = Object.keys(data.players || {}).sort((a, b) => data.players[a].order - data.players[b].order);
+
+            const chatHtml = data.chats ? Object.values(data.chats).map(c => `<div class="chat-msg"><span>${c.avatar || '🚀'}</span> <b>${c.name}:</b> ${c.message}</div>`).join('') : '<div style="color:#adb5bd; text-align:center;">자유롭게 대화를 나눠보세요!</div>';
+            ['chat-messages', 'game-chat-messages', 'result-chat-messages'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.innerHTML = chatHtml;
+                    el.scrollTop = el.scrollHeight;
+                }
+            });
+
+            if (data.status === 'waiting') {
+                stopTimer();
+                lastRenderedRound = -1;
+                showScreen('screen-waiting');
+                document.getElementById('display-room-code').innerText = roomCode;
+                document.getElementById('time-limit-select').value = gameTimeLimit;
+                document.getElementById('game-mode-select').value = mode;
+
+                const modeBadge = document.getElementById('guest-mode-indicator');
+                if (mode === 'spy') {
+                    modeBadge.className = 'mode-badge-display mode-spy';
+                    modeBadge.innerText = '🕵️ 스파이 모드 (정답을 망치면 스파이 승리!)';
+                } else if (mode === 'chaos') {
+                    modeBadge.className = 'mode-badge-display mode-chaos';
+                    modeBadge.innerText = '🤪 대환장 모드 (엉뚱한 제시어가 나와요!)';
+                } else {
+                    modeBadge.className = 'mode-badge-display mode-normal';
+                    modeBadge.innerText = '🎮 일반 모드 (협동해서 정답 맞히기!)';
+                }
+
+                const listEl = document.getElementById('player-list');
+                listEl.innerHTML = playerIds.map(id => {
+                    const p = data.players[id];
+                    return `<li><span>${p.avatar || '🚀'}</span> ${p.name} ${id === data.host ? '👑' : ''}</li>`;
+                }).join('');
+
+                if (isHost || data.host === myId) {
+                    isHost = true;
+                    document.getElementById('host-settings').classList.remove('hidden');
+                    document.getElementById('btn-start-game').classList.remove('hidden');
+                    document.getElementById('btn-start-game').disabled = playerIds.length < 2;
+                    document.getElementById('waiting-host-msg').classList.add('hidden');
+                } else {
+                    document.getElementById('host-settings').classList.add('hidden');
+                    document.getElementById('btn-start-game').classList.add('hidden');
+                    document.getElementById('waiting-host-msg').classList.remove('hidden');
+                }
+            }
+            else if (data.status === 'playing') {
+                showScreen('screen-game');
+
+                const roleBanner = document.getElementById('my-role-banner');
+                if (mode === 'spy') {
+                    roleBanner.classList.remove('hidden');
+                    if (data.spyId === myId) {
+                        roleBanner.className = 'role-banner role-spy';
+                        roleBanner.innerText = '🕵️ 당신은 스파이입니다! 티 안 나게 흐름을 망쳐서 정답을 틀리게 만드세요!';
+                    } else {
+                        roleBanner.className = 'role-banner role-citizen';
+                        roleBanner.innerText = '😇 당신은 선량한 시민입니다! 스파이의 방해를 이겨내고 정답을 맞히세요!';
+                    }
+                } else if (mode === 'chaos') {
+                    roleBanner.classList.remove('hidden');
+                    roleBanner.className = 'role-banner role-chaos';
+                    roleBanner.innerText = '🤪 대환장 모드! 엉뚱한 제시어도 최대한 그림으로 표현해 보세요!';
+                } else {
+                    roleBanner.classList.add('hidden');
+                }
+
+                const round = data.currentRound;
+                const totalRounds = playerIds.length;
+                document.getElementById('round-indicator').innerText = `라운드 ${round} / ${totalRounds}`;
+
+                const submissions = (data.submissions && data.submissions[round]) || {};
+                const submittedCount = Object.keys(submissions).length;
+                document.getElementById('submit-status').innerText = `제출 현황: ${submittedCount} / ${totalRounds}`;
+
+                updateLiveProgress(data, playerIds, round, submissions);
+
+                if (isHost && submittedCount === totalRounds) {
+                    stopTimer();
+                    advanceRound(data, playerIds);
+                    return;
+                }
+
+                if (submissions[myId]) {
+                    stopTimer();
+                    document.getElementById('mode-draw').classList.add('hidden');
+                    document.getElementById('mode-guess').classList.add('hidden');
+                    document.getElementById('mode-wait-turn').classList.remove('hidden');
+                    document.getElementById('timer-display').innerText = '✅ 제출 완료!';
+                } else if (lastRenderedRound !== round) {
+                    lastRenderedRound = round;
+                    setupMyTurn(data, playerIds, round);
+                }
+            }
+            else if (data.status === 'finished') {
+                stopTimer();
+                showScreen('screen-result');
+                renderResultsSync(data, playerIds);
+            }
+        });
+    }
+
+    function updateLiveProgress(data, playerIds, round, submissions) {
+        const progressListEl = document.getElementById('live-progress-list');
+        if (!progressListEl) return;
+
+        let html = '';
+        playerIds.forEach(pid => {
+            const p = data.players[pid];
+            const isDone = submissions[pid];
+            const myIndex = playerIds.indexOf(pid);
+            const targetBookOwnerId = playerIds[(myIndex - (round - 1) + playerIds.length) % playerIds.length];
+            const prevStep = data.books[targetBookOwnerId].steps[round - 1];
+            const actionText = prevStep.type === 'word' ? '그림 그리는 중 🎨' : '단어 맞히는 중 ✍️';
+
+            html += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 3px 0;">
+                <span>${p.avatar} <b>${p.name}</b></span>
+                <span style="color: ${isDone ? '#2ecc71' : '#e67e22'}; font-size: 13px;">${isDone ? '✅ 제출 완료' : actionText}</span>
+            </div>`;
+        });
+        progressListEl.innerHTML = html;
+    }
+
+    function setupMyTurn(data, playerIds, round) {
+        document.getElementById('mode-wait-turn').classList.add('hidden');
+        const myIndex = playerIds.indexOf(myId);
+        const n = playerIds.length;
+
+        const targetBookIndex = (myIndex - (round - 1) + n) % n;
+        const targetBookOwnerId = playerIds[targetBookIndex];
+        const prevStep = data.books[targetBookOwnerId].steps[round - 1];
+
+        if (prevStep.type === 'word') {
+            document.getElementById('mode-guess').classList.add('hidden');
+            document.getElementById('mode-draw').classList.remove('hidden');
+            document.getElementById('draw-clue-text').innerText = prevStep.content;
+            initCanvas();
+        } else {
+            document.getElementById('mode-draw').classList.add('hidden');
+            document.getElementById('mode-guess').classList.remove('hidden');
+            document.getElementById('guess-image').src = prevStep.content;
+            document.getElementById('guess-input').value = '';
+        }
+
+        startTimer();
+    }
+
+    function startTimer() {
+        stopTimer();
+        let timeLeft = gameTimeLimit;
+        const timerEl = document.getElementById('timer-display');
+        timerEl.innerText = `⏳ 남은 시간: ${timeLeft}초`;
+
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            timerEl.innerText = `⏳ 남은 시간: ${timeLeft}초`;
+
+            if (timeLeft <= 0) {
+                stopTimer();
+                autoSubmitTimeout();
+            }
+        }, 1000);
+    }
+
+    function stopTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+    }
+
+    function autoSubmitTimeout() {
+        const round = currentRoomData.currentRound;
+        const submissions = (currentRoomData.submissions && currentRoomData.submissions[round]) || {};
+        if (submissions[myId]) return;
+
+        const playerIds = Object.keys(currentRoomData.players).sort((a, b) => currentRoomData.players[a].order - currentRoomData.players[b].order);
+        const myIndex = playerIds.indexOf(myId);
+        const n = playerIds.length;
+        const targetBookOwnerId = playerIds[(myIndex - (round - 1) + n) % n];
+        const prevStep = currentRoomData.books[targetBookOwnerId].steps[round - 1];
+
+        let newStep = null;
+        if (prevStep.type === 'word') {
+            const imgData = canvas.toDataURL('image/png', 0.7);
+            newStep = { type: 'drawing', author: `${myAvatar} ${myName}`, content: imgData };
+        } else {
+            const guessText = document.getElementById('guess-input').value.trim() || '(시간초과)';
+            newStep = { type: 'word', author: `${myAvatar} ${myName}`, content: guessText };
+        }
+
+        db.ref(`rooms/${roomCode}/books/${targetBookOwnerId}/steps`).update({
+            [round]: newStep
+        }).then(() => {
+            db.ref(`rooms/${roomCode}/submissions/${round}`).update({
+                [myId]: true
+            });
+        });
+    }
+
+    function submitTurn() {
+        stopTimer();
+        const round = currentRoomData.currentRound;
+        const playerIds = Object.keys(currentRoomData.players).sort((a, b) => currentRoomData.players[a].order - currentRoomData.players[b].order);
+        const myIndex = playerIds.indexOf(myId);
+        const n = playerIds.length;
+        const targetBookOwnerId = playerIds[(myIndex - (round - 1) + n) % n];
+        const prevStep = currentRoomData.books[targetBookOwnerId].steps[round - 1];
+
+        let newStep = null;
+        if (prevStep.type === 'word') {
+            const imgData = canvas.toDataURL('image/png', 0.7);
+            newStep = { type: 'drawing', author: `${myAvatar} ${myName}`, content: imgData };
+        } else {
+            const guessText = document.getElementById('guess-input').value.trim();
+            if (!guessText) {
+                startTimer();
+                return alert('정답 단어를 입력해주세요!');
+            }
+            newStep = { type: 'word', author: `${myAvatar} ${myName}`, content: guessText };
+        }
+
+        db.ref(`rooms/${roomCode}/books/${targetBookOwnerId}/steps`).update({
+            [round]: newStep
+        }).then(() => {
+            db.ref(`rooms/${roomCode}/submissions/${round}`).update({
+                [myId]: true
+            });
+        });
+    }
+
+    function advanceRound(data, playerIds) {
+        const nextRound = data.currentRound + 1;
+        if (nextRound > playerIds.length) {
+            db.ref(`rooms/${roomCode}`).update({
+                status: 'finished',
+                resultState: { bookId: playerIds[0], stepIndex: 0 }
+            });
+        } else {
+            db.ref(`rooms/${roomCode}`).update({ currentRound: nextRound });
+        }
+    }
+
+    function renderResultsSync(data, playerIds) {
+        const tabsEl = document.getElementById('book-tabs');
+        tabsEl.innerHTML = '';
+
+        const resState = data.resultState || { bookId: playerIds[0], stepIndex: 0 };
+        activeBookId = resState.bookId;
+        currentStepIndex = resState.stepIndex;
+
+        playerIds.forEach((pid) => {
+            const btn = document.createElement('button');
+            btn.innerText = `${data.books[pid].ownerName}의 스케치북`;
+            if (pid === activeBookId) btn.classList.add('active');
+
+            btn.onclick = () => {
+                if (isHost || data.host === myId) {
+                    db.ref(`rooms/${roomCode}/resultState`).set({ bookId: pid, stepIndex: 0 });
+                } else {
+                    alert('방장이 스케치북을 선택하는 중입니다!');
+                }
+            };
+            tabsEl.appendChild(btn);
+        });
+
+        const targetBook = data.books[activeBookId];
+        const steps = Object.values(targetBook.steps);
+        const maxIndex = steps.length;
+
+        const viewerBox = document.getElementById('sketchbook-viewer-box');
+        const summaryBox = document.getElementById('summary-view-box');
+        const authorEl = document.getElementById('page-author');
+        const counterEl = document.getElementById('page-counter');
+        const bodyEl = document.getElementById('page-body');
+        const guideMsg = document.getElementById('result-guide-msg');
+
+        if (isHost || data.host === myId) {
+            document.getElementById('sketchbook-nav-container').classList.remove('hidden');
+            document.getElementById('btn-play-again').classList.remove('hidden');
+            document.getElementById('btn-restart').classList.remove('hidden');
+            guideMsg.innerText = "방장이 페이지를 넘기면 모든 친구들의 화면이 실시간으로 동기화됩니다!";
+        } else {
+            document.getElementById('sketchbook-nav-container').classList.add('hidden');
+            document.getElementById('btn-play-again').classList.add('hidden');
+            document.getElementById('btn-restart').classList.add('hidden');
+            guideMsg.innerText = `현재 "${targetBook.ownerName}"의 스케치북 구경 중! 다 함께 채팅으로 떠들어보세요 ㅋㅋㅋ`;
+        }
+
+        if (currentStepIndex < maxIndex) {
+            viewerBox.classList.remove('hidden');
+            summaryBox.classList.add('hidden');
+
+            counterEl.innerText = `${currentStepIndex + 1} / ${maxIndex + 1} 페이지`;
+
+            if (currentStepIndex === 0) {
+                authorEl.innerText = '🎯 최초 제시어';
+                bodyEl.innerHTML = `<div class="big-word-card">${steps[0].content}</div>`;
+            } else {
+                const step = steps[currentStepIndex];
+                if (step.type === 'drawing') {
+                    authorEl.innerText = `🎨 ${step.author}의 그림`;
+                    bodyEl.innerHTML = `<img src="${step.content}" class="preview-img">`;
+                } else {
+                    authorEl.innerText = `💬 ${step.author}의 추측`;
+                    bodyEl.innerHTML = `<div class="big-word-card" style="background:#e8f4fd; border-color:#3498db; color:#2980b9;">${step.content}</div>`;
+                }
+            }
+        } else {
+            viewerBox.classList.add('hidden');
+            summaryBox.classList.remove('hidden');
+
+            const firstWord = steps[0].content.trim();
+            const lastStep = steps[steps.length - 1];
+            const lastWord = (lastStep.type === 'word' ? lastStep.content : '(마지막이 그림)').trim();
+            const isSuccess = (firstWord.replace(/\s+/g, '').toLowerCase() === lastWord.replace(/\s+/g, '').toLowerCase());
+
+            let summaryHtml = `
+                <div class="summary-row">
+                    <div>
+                        <div style="font-size: 11px; color: #7f8c8d;">처음 제시어 vs 마지막 제시어</div>
+                        <div style="font-size: 1.15em; font-weight: bold; margin-top: 2px;">
+                            <span style="color: #d97706;">${firstWord}</span> ➡️ <span style="color: ${isSuccess ? '#16a34a' : '#dc2626'};">${lastWord}</span>
+                        </div>
+                    </div>
+                    <div style="font-size: 1.3em; font-weight: bold; color: ${isSuccess ? '#16a34a' : '#dc2626'};">
+                        ${isSuccess ? '🎉 성공!' : '❌ 실패!'}
+                    </div>
+                </div>
+                <div style="font-size: 12px; font-weight: bold; color: #64748b; margin-top: 6px;">📜 전체 변천사 순서 보기</div>
+                <div class="summary-steps-preview">
+            `;
+
+            steps.forEach((s, idx) => {
+                if (idx === 0) {
+                    summaryHtml += `<div class="summary-step-item"><div style="font-weight:bold; color:#d97706;">시작 제시어</div><div style="margin-top:4px; font-weight:bold;">${s.content}</div></div>`;
+                } else if (s.type === 'drawing') {
+                    summaryHtml += `<div class="summary-step-item"><div style="font-weight:bold; color:#2563eb;">${s.author.split(' ')[0]} 그림</div><img src="${s.content}"></div>`;
+                } else {
+                    summaryHtml += `<div class="summary-step-item"><div style="font-weight:bold; color:#0284c7;">${s.author.split(' ')[0]} 추측</div><div style="margin-top:4px; font-weight:bold; font-size:10px;">${s.content}</div></div>`;
+                }
+            });
+            summaryHtml += `</div>`;
+
+            document.getElementById('summary-rows-container').innerHTML = summaryHtml;
+
+            const spySection = document.getElementById('spy-reveal-section');
+            const revealBtn = document.getElementById('btn-reveal-spy');
+            const revealResult = document.getElementById('spy-reveal-result');
+
+            if (data.gameMode === 'spy' && data.spyId) {
+                spySection.classList.remove('hidden');
+                if (data.spyRevealed) {
+                    revealBtn.classList.add('hidden');
+                    revealResult.classList.remove('hidden');
+                    const spyPlayer = data.players[data.spyId];
+                    revealResult.innerText = `🕵️ 이번 판의 스파이는 바로 [${spyPlayer.avatar} ${spyPlayer.name}] 님이었습니다!`;
+                } else {
+                    revealResult.classList.add('hidden');
+                    if (isHost || data.host === myId) {
+                        revealBtn.classList.remove('hidden');
+                    } else {
+                        revealBtn.classList.add('hidden');
+                    }
+                }
+            } else {
+                spySection.classList.add('hidden');
+            }
+
+            if (isSuccess) {
+                confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
+            }
+        }
+    }
+
+    document.getElementById('btn-prev-page').addEventListener('click', () => {
+        if (!isHost) return;
+        if (currentStepIndex > 0) {
+            db.ref(`rooms/${roomCode}/resultState`).update({ stepIndex: currentStepIndex - 1 });
+        }
+    });
+
+    document.getElementById('btn-next-page').addEventListener('click', () => {
+        if (!isHost) return;
+        const targetBook = currentRoomData.books[activeBookId];
+        const maxLen = Object.keys(targetBook.steps).length;
+        if (currentStepIndex < maxLen) {
+            db.ref(`rooms/${roomCode}/resultState`).update({ stepIndex: currentStepIndex + 1 });
+        }
+    });
+</script>
+
+</body>
+</html>
