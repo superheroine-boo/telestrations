@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>실시간 멀티 텔레스트레이션</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; }
+        body {
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #2c3e50;
+        }
+        .container {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 520px;
+            text-align: center;
+        }
+        h1 { margin: 0 0 10px; font-size: 1.8em; color: #34495e; }
+        h2 { margin: 0 0 15px; font-size: 1.4em; }
+        .hidden { display: none !important; }
+        input, button {
+            padding: 12px 16px;
+            font-size: 16px;
+            margin: 8px 0;
+            border-radius: 10px;
+            border: 1px solid #dce1e7;
+            width: 100%;
+        }
+        input:focus { outline: none; border-color: #3498db; }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        button:hover { background-color: #2980b9; transform: translateY(-1px); }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; transform: none; }
+        .btn-green { background-color: #2ecc71; }
+        .btn-green:hover { background-color: #27ae60; }
+        .btn-orange { background-color: #e67e22; }
+        .btn-orange:hover { background-color: #d35400; }
+        
+        .room-badge {
+            display: inline-block;
+            background: #e8f4fd;
+            color: #2980b9;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+        }
+        .player-list {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        .player-list li {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.95em;
+        }
+        .clue-box {
+            background: #fff3cd;
+            border: 2px dashed #ffc107;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 15px 0;
+            font-size: 1.25em;
+            font-weight: bold;
+            color: #856404;
+        }
+        canvas {
+            border: 2px solid #dfe6e9;
+            border-radius: 12px;
+            cursor: crosshair;
+            background: #ffffff;
+            touch-action: none;
+            max-width: 100%;
+            margin: 10px 0;
+        }
+        .tools {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        .tools button {
+            width: auto;
+            padding: 6px 12px;
+            font-size: 13px;
+            margin: 0;
+            background-color: #7f8c8d;
+        }
+        .tools button.active { background-color: #2c3e50; box-shadow: 0 0 0 2px #3498db; }
+        .color-btn {
+            width: 28px !important;
+            height: 28px;
+            padding: 0 !important;
+            border-radius: 50% !important;
+            border: 2px solid #fff !important;
+            box-shadow: 0 0 3px rgba(0,0,0,0.3);
+        }
+        .preview-img {
+            max-width: 100%;
+            border: 2px solid #dfe6e9;
+            border-radius: 12px;
+            margin: 10px 0;
+            background: #fff;
+        }
+        .timeline-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: left;
+        }
+        .timeline-step {
+            margin: 10px 0;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #dee2e6;
+        }
+        .timeline-step:last-child { border-bottom: none; padding-bottom: 0; }
+        .book-tabs {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .book-tabs button {
+            width: auto;
+            white-space: nowrap;
+            padding: 8px 14px;
+            font-size: 14px;
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+        .book-tabs button.active {
+            background: #3498db;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 1. 로비 -->
+    <div id="screen-lobby">
+        <h1>🎨 텔레스트레이션</h1>
+        <p style="color: #7f8c8d; margin-bottom: 20px;">친구들과 실시간 그림 전달 게임!</p>
+        <input type="text" id="nickname" placeholder="닉네임을 입력하세요 (예: 수현)" maxlength="10">
+        <button class="btn-green" id="btn-create-room">새 방 만들기</button>
+        <div style="margin: 15px 0; color: #bdc3c7; font-size: 14px;">── 또는 방 코드로 입장 ──</div>
+        <div style="display: flex; gap: 8px;">
+            <input type="text" id="room-code-input" placeholder="방 코드 4자리" maxlength="4" style="text-transform: uppercase; margin: 0;">
+            <button id="btn-join-room" style="width: 40%; margin: 0;">입장</button>
+        </div>
+    </div>
+
+    <!-- 2. 대기실 -->
+    <div id="screen-waiting" class="hidden">
+        <h2>대기실</h2>
+        <div>방 코드: <span class="room-badge" id="display-room-code"></span></div>
+        <p style="font-size: 14px; color: #7f8c8d;">친구들에게 위 방 코드를 알려주세요! (최소 2명)</p>
+        <ul class="player-list" id="player-list"></ul>
+        <button id="btn-start-game" class="btn-green hidden">모두 모였어요! 게임 시작</button>
+        <p id="waiting-host-msg" style="color: #95a5a6; font-size: 14px;">방장이 게임을 시작할 때까지 기다려주세요...</p>
+    </div>
+
+    <!-- 3. 게임 진행 -->
+    <div id="screen-game" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span id="round-indicator" style="font-weight: bold; color: #3498db;">라운드 1 / 3</span>
+            <span id="submit-status" style="font-size: 13px; color: #7f8c8d;">제출 현황: 0/0</span>
+        </div>
+
+        <div id="mode-draw" class="hidden">
+            <p style="margin: 5px 0;">아래 제시어를 그림으로 표현하세요!</p>
+            <div class="clue-box" id="draw-clue-text">제시어</div>
+            
+            <div class="tools">
+                <button class="color-btn" style="background:#2c3e50;" data-color="#2c3e50"></button>
+                <button class="color-btn" style="background:#e74c3c;" data-color="#e74c3c"></button>
+                <button class="color-btn" style="background:#3498db;" data-color="#3498db"></button>
+                <button class="color-btn" style="background:#2ecc71;" data-color="#2ecc71"></button>
+                <button class="color-btn" style="background:#f1c40f;" data-color="#f1c40f"></button>
+                <button id="btn-eraser">지우개</button>
+                <button id="btn-clear" style="background:#95a5a6;">전체삭제</button>
+            </div>
+            <canvas id="canvas" width="420" height="320"></canvas>
+            <button id="btn-submit-draw" class="btn-green">그림 제출하기</button>
+        </div>
+
+        <div id="mode-guess" class="hidden">
+            <p style="margin: 5px 0;">이 그림은 무엇을 표현한 걸까요?</p>
+            <img id="guess-image" class="preview-img" src="" alt="이전 플레이어의 그림">
+            <input type="text" id="guess-input" placeholder="정답(단어)을 입력하세요" maxlength="20">
+            <button id="btn-submit-guess" class="btn-orange">단어 제출하기</button>
+        </div>
+
+        <div id="mode-wait-turn" class="hidden" style="padding: 40px 0;">
+            <h3>✅ 제출 완료!</h3>
+            <p style="color: #7f8c8d;">다른 친구들이 끝낼 때까지 잠시 기다려주세요...</p>
+        </div>
+    </div>
+
+    <!-- 4. 결과 발표 -->
+    <div id="screen-result" class="hidden">
+        <h2>🎉 결과 발표 타임라인!</h2>
+        <p style="font-size: 14px; color: #7f8c8d;">각자의 제시어가 어떻게 변했는지 확인해 보세요!</p>
+        <div class="book-tabs" id="book-tabs"></div>
+        <div id="timeline-content"></div>
+        <button id="btn-restart" style="margin-top: 15px;">처음으로 돌아가기</button>
+    </div>
+</div>
+
+<!-- 안정적인 파이어베이스 v9 컴팩트 CDN 연결 -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyD3vtdGXBmT0AhhOnDhRxtVSKyvVagv1AY",
+        authDomain: "telestration-ac12f.firebaseapp.com",
+        databaseURL: "https://telestration-ac12f-default-rtdb.firebaseio.com",
+        projectId: "telestration-ac12f",
+        storageBucket: "telestration-ac12f.firebasestorage.app",
+        messagingSenderId: "383833654591",
+        appId: "1:383833654591:web:07d1665be65de375343f8a",
+        measurementId: "G-JT0ZJZ85QW"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const WORD_POOL = [
+        "자유의 여신상", "선풍기", "피카츄", "유니콘", "고슴도치", "펭귄", "가위바위보",
+        "인어공주", "로켓 발사", "바나나 껍질", "해리포터", "스파이더맨", "탕후루",
+        "붕어빵", "롤러코스터", "우주비행사", "아이스크림", "북극곰", "치킨과 맥주",
+        "스마트폰", "자전거", "해바라기", "드라큘라", "캠핑카", "공룡"
+    ];
+
+    let myId = 'user_' + Math.random().toString(36).substr(2, 6);
+    let myName = '';
+    let roomCode = '';
+    let isHost = false;
+    let currentRoomData = null;
+    let lastRenderedRound = -1;
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let brushColor = '#2c3e50';
+    let brushSize = 4;
+
+    function initCanvas() {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+    }
+
+    function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const clientX = e.clientX ?? e.touches[0].clientX;
+        const clientY = e.clientY ?? e.touches[0].clientY;
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
+    }
+
+    canvas.addEventListener('mousedown', (e) => { isDrawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+    canvas.addEventListener('mousemove', (e) => {
+        if (!isDrawing) return;
+        const p = getPos(e);
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize;
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+    });
+    canvas.addEventListener('mouseup', () => isDrawing = false);
+    canvas.addEventListener('mouseleave', () => isDrawing = false);
+
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); isDrawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }, { passive: false });
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!isDrawing) return;
+        const p = getPos(e);
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize;
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+    }, { passive: false });
+    canvas.addEventListener('touchend', () => isDrawing = false);
+
+    document.querySelectorAll('.color-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            brushColor = btn.getAttribute('data-color');
+            brushSize = 4;
+            document.getElementById('btn-eraser').classList.remove('active');
+        });
+    });
+
+    document.getElementById('btn-eraser').addEventListener('click', () => {
+        brushColor = '#ffffff';
+        brushSize = 20;
+        document.getElementById('btn-eraser').classList.add('active');
+    });
+
+    document.getElementById('btn-clear').addEventListener('click', () => initCanvas());
+
+    function showScreen(screenId) {
+        ['screen-lobby', 'screen-waiting', 'screen-game', 'screen-result'].forEach(id => {
+            document.getElementById(id).classList.add('hidden');
+        });
+        document.getElementById(screenId).classList.remove('hidden');
+    }
+
+    // 방 만들기 버튼 (클릭 시 무조건 반응하도록 알림 추가)
+    document.getElementById('btn-create-room').addEventListener('click', () => {
+        myName = document.getElementById('nickname').value.trim();
+        if (!myName) {
+            alert('닉네임을 입력해주세요!');
+            return;
+        }
+
+        roomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+        isHost = true;
+
+        db.ref(`rooms/${roomCode}`).set({
+            host: myId,
+            status: 'waiting',
+            currentRound: 0,
+            players: { [myId]: { name: myName, order: 0 } }
+        }).then(() => {
+            listenRoom();
+        }).catch((err) => {
+            alert('방 생성 실패: ' + err.message);
+        });
+    });
+
+    // 방 입장 버튼
+    document.getElementById('btn-join-room').addEventListener('click', () => {
+        myName = document.getElementById('nickname').value.trim();
+        roomCode = document.getElementById('room-code-input').value.trim().toUpperCase();
+        if (!myName) {
+            alert('닉네임을 입력해주세요!');
+            return;
+        }
+        if (roomCode.length !== 4) {
+            alert('4자리 방 코드를 입력해주세요!');
+            return;
+        }
+
+        db.ref(`rooms/${roomCode}`).get().then((snapshot) => {
+            if (!snapshot.exists()) {
+                alert('존재하지 않는 방 코드입니다.');
+                return;
+            }
+
+            const data = snapshot.val();
+            if (data.status !== 'waiting') {
+                alert('이미 게임이 시작된 방입니다.');
+                return;
+            }
+
+            const playerCount = Object.keys(data.players || {}).length;
+            db.ref(`rooms/${roomCode}/players`).update({
+                [myId]: { name: myName, order: playerCount }
+            }).then(() => {
+                listenRoom();
+            });
+        }).catch((err) => {
+            alert('입장 중 오류 발생: ' + err.message);
+        });
+    });
+
+    document.getElementById('btn-start-game').addEventListener('click', () => {
+        const playerIds = Object.keys(currentRoomData.players).sort((a, b) => currentRoomData.players[a].order - currentRoomData.players[b].order);
+        const shuffledWords = [...WORD_POOL].sort(() => Math.random() - 0.5);
+
+        const books = {};
+        playerIds.forEach((pid, idx) => {
+            books[pid] = {
+                ownerName: currentRoomData.players[pid].name,
+                steps: {
+                    0: { type: 'word', author: '랜덤 제시어', content: shuffledWords[idx % shuffledWords.length] }
+                }
+            };
+        });
+
+        db.ref(`rooms/${roomCode}`).update({
+            status: 'playing',
+            currentRound: 1,
+            books: books
+        });
+    });
+
+    document.getElementById('btn-submit-draw').addEventListener('click', submitTurn);
+    document.getElementById('btn-submit-guess').addEventListener('click', submitTurn);
+    document.getElementById('btn-restart').addEventListener('click', () => location.reload());
+
+    function listenRoom() {
+        db.ref(`rooms/${roomCode}`).on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+            currentRoomData = data;
+
+            const playerIds = Object.keys(data.players || {}).sort((a, b) => data.players[a].order - data.players[b].order);
+
+            if (data.status === 'waiting') {
+                showScreen('screen-waiting');
+                document.getElementById('display-room-code').innerText = roomCode;
+                
+                const listEl = document.getElementById('player-list');
+                listEl.innerHTML = playerIds.map(id => `<li>${data.players[id].name} ${id === data.host ? '👑' : ''}</li>`).join('');
+
+                if (isHost) {
+                    document.getElementById('btn-start-game').classList.remove('hidden');
+                    document.getElementById('btn-start-game').disabled = playerIds.length < 2;
+                    document.getElementById('waiting-host-msg').classList.add('hidden');
+                }
+            } 
+            else if (data.status === 'playing') {
+                showScreen('screen-game');
+                const round = data.currentRound;
+                const totalRounds = playerIds.length;
+                document.getElementById('round-indicator').innerText = `라운드 ${round} / ${totalRounds}`;
+
+                const submissions = (data.submissions && data.submissions[round]) || {};
+                const submittedCount = Object.keys(submissions).length;
+                document.getElementById('submit-status').innerText = `제출 현황: ${submittedCount} / ${totalRounds}`;
+
+                if (isHost && submittedCount === totalRounds) {
+                    advanceRound(data, playerIds);
+                    return;
+                }
+
+                if (submissions[myId]) {
+                    document.getElementById('mode-draw').classList.add('hidden');
+                    document.getElementById('mode-guess').classList.add('hidden');
+                    document.getElementById('mode-wait-turn').classList.remove('hidden');
+                } else if (lastRenderedRound !== round) {
+                    lastRenderedRound = round;
+                    setupMyTurn(data, playerIds, round);
+                }
+            } 
+            else if (data.status === 'finished') {
+                showScreen('screen-result');
+                renderResults(data, playerIds);
+            }
+        });
+    }
+
+    function setupMyTurn(data, playerIds, round) {
+        document.getElementById('mode-wait-turn').classList.add('hidden');
+        const myIndex = playerIds.indexOf(myId);
+        const n = playerIds.length;
+        
+        const targetBookIndex = (myIndex - (round - 1) + n) % n;
+        const targetBookOwnerId = playerIds[targetBookIndex];
+        const prevStep = data.books[targetBookOwnerId].steps[round - 1];
+
+        if (prevStep.type === 'word') {
+            document.getElementById('mode-guess').classList.add('hidden');
+            document.getElementById('mode-draw').classList.remove('hidden');
+            document.getElementById('draw-clue-text').innerText = prevStep.content;
+            initCanvas();
+        } else {
+            document.getElementById('mode-draw').classList.add('hidden');
+            document.getElementById('mode-guess').classList.remove('hidden');
+            document.getElementById('guess-image').src = prevStep.content;
+            document.getElementById('guess-input').value = '';
+        }
+    }
+
+    function submitTurn() {
+        const round = currentRoomData.currentRound;
+        const playerIds = Object.keys(currentRoomData.players).sort((a, b) => currentRoomData.players[a].order - currentRoomData.players[b].order);
+        const myIndex = playerIds.indexOf(myId);
+        const n = playerIds.length;
+        const targetBookOwnerId = playerIds[(myIndex - (round - 1) + n) % n];
+        const prevStep = currentRoomData.books[targetBookOwnerId].steps[round - 1];
+
+        let newStep = null;
+        if (prevStep.type === 'word') {
+            const imgData = canvas.toDataURL('image/png', 0.7);
+            newStep = { type: 'drawing', author: myName, content: imgData };
+        } else {
+            const guessText = document.getElementById('guess-input').value.trim();
+            if (!guessText) return alert('정답 단어를 입력해주세요!');
+            newStep = { type: 'word', author: myName, content: guessText };
+        }
+
+        db.ref(`rooms/${roomCode}/books/${targetBookOwnerId}/steps`).update({
+            [round]: newStep
+        }).then(() => {
+            db.ref(`rooms/${roomCode}/submissions/${round}`).update({
+                [myId]: true
+            });
+        });
+    }
+
+    function advanceRound(data, playerIds) {
+        const nextRound = data.currentRound + 1;
+        if (nextRound > playerIds.length) {
+            db.ref(`rooms/${roomCode}`).update({ status: 'finished' });
+        } else {
+            db.ref(`rooms/${roomCode}`).update({ currentRound: nextRound });
+        }
+    }
+
+    function renderResults(data, playerIds) {
+        const tabsEl = document.getElementById('book-tabs');
+        tabsEl.innerHTML = '';
+
+        playerIds.forEach((pid, idx) => {
+            const btn = document.createElement('button');
+            btn.innerText = `${data.books[pid].ownerName}의 스케치북`;
+            btn.onclick = () => showBookTimeline(data.books[pid], btn);
+            tabsEl.appendChild(btn);
+            if (idx === 0) showBookTimeline(data.books[pid], btn);
+        });
+    }
+
+    function showBookTimeline(book, activeBtn) {
+        document.querySelectorAll('#book-tabs button').forEach(b => b.classList.remove('active'));
+        activeBtn.classList.add('active');
+
+        const contentEl = document.getElementById('timeline-content');
+        const steps = Object.values(book.steps);
+        
+        let html = `<div class="timeline-card">`;
+        steps.forEach((step, idx) => {
+            if (idx === 0) {
+                html += `<div class="timeline-step"><b>🎯 최초 제시어:</b> <span style="color:#e74c3c; font-size:1.2em; font-weight:bold;">${step.content}</span></div>`;
+            } else if (step.type === 'drawing') {
+                html += `<div class="timeline-step"><b>🎨 ${step.author}의 그림:</b><br><img src="${step.content}" class="preview-img"></div>`;
+            } else {
+                html += `<div class="timeline-step"><b>💬 ${step.author}의 추측:</b> <span style="color:#2980b9; font-size:1.15em; font-weight:bold;">${step.content}</span></div>`;
+            }
+        });
+        html += `</div>`;
+        contentEl.innerHTML = html;
+    }
+</script>
+
+</body>
+</html>
