@@ -604,7 +604,7 @@
                 return;
             }
             const roomData = snapshot.val();
-            const nowOrder = roomData.players && roomData.players[myId] ? roomData.players[myId].order : Date.now();
+            const nowOrder = Date.now();
 
             db.ref(`rooms/${roomCode}/players/${myId}`).set({
                 name: myName,
@@ -627,7 +627,6 @@
                 if (!room || !room.players || Object.keys(room.players).length === 0) {
                     db.ref(`rooms/${roomCode}`).remove();
                 } else if (room.host === myId) {
-                    // 남은 플레이어 중 order 값이 가장 작은 사람(가장 먼저 들어온 사람)을 새 방장으로 지정
                     const remainingPlayers = Object.entries(room.players);
                     remainingPlayers.sort((a, b) => a[1].order - b[1].order);
                     const nextHostId = remainingPlayers[0][0];
@@ -659,12 +658,9 @@
             const room = snapshot.val();
             if (!room) return;
 
-            // 방장 자동 위임 및 입퇴장 시스템 알림 처리
             if (room.players) {
                 const currentPlayersKeys = Object.keys(room.players);
 
-                // 만약 현재 방장이 나갔거나 존재하지 않는데 내가 속해있다면, 
-                // order가 가장 빠른 사람에게 자동으로 방장 권한 동기화
                 if (!room.players[room.host] && currentPlayersKeys.length > 0) {
                     const sortedPlayers = Object.entries(room.players).sort((a, b) => a[1].order - b[1].order);
                     const newHostId = sortedPlayers[0][0];
@@ -673,7 +669,6 @@
                     }
                 }
 
-                // 나간 사람 감지
                 previousPlayersKeys.forEach(oldId => {
                     if (!currentPlayersKeys.includes(oldId) && room.playersLastState && room.playersLastState[oldId]) {
                         const leftName = room.playersLastState[oldId].name;
@@ -687,7 +682,6 @@
                     }
                 });
 
-                // 새로 들어온 사람 감지
                 currentPlayersKeys.forEach(newId => {
                     if (!previousPlayersKeys.includes(newId) && newId !== myId) {
                         const joinedName = room.players[newId].name;
@@ -961,9 +955,10 @@
         }
     }
 
-    document.getElementById('btn-submit-draw').addEventListener('click', () => {
+    function submitDrawAction() {
         const dataUrl = canvas.toDataURL('image/png');
         const room = currentRoomData;
+        if (!room) return;
         const round = room.currentRound;
         const playerIds = Object.keys(room.players).sort();
         const myIndex = playerIds.indexOf(myId);
@@ -972,13 +967,14 @@
         const pageKey = round - 1;
 
         submitContent(targetBookId, pageKey, 'image', dataUrl);
-    });
+    }
 
-    document.getElementById('btn-submit-guess').addEventListener('click', () => {
+    function submitGuessAction() {
         const guessVal = document.getElementById('guess-input').value.trim();
         if (!guessVal) return alert('정답 단어를 입력해주세요!');
 
         const room = currentRoomData;
+        if (!room) return;
         const round = room.currentRound;
         const playerIds = Object.keys(room.players).sort();
         const myIndex = playerIds.indexOf(myId);
@@ -987,6 +983,16 @@
         const pageKey = round - 1;
 
         submitContent(targetBookId, pageKey, 'word', guessVal);
+    }
+
+    document.getElementById('btn-submit-draw').addEventListener('click', submitDrawAction);
+    document.getElementById('btn-submit-guess').addEventListener('click', submitGuessAction);
+
+    // 정답(글자) 입력창에서 엔터키 입력 시 바로 제출되도록 처리
+    document.getElementById('guess-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            submitGuessAction();
+        }
     });
 
     function submitContent(bookId, pageKey, type, content) {
@@ -1216,12 +1222,11 @@
     setupChat('result-chat-input', 'btn-send-result-chat');
 
     function listenChats() {
-        db.ref('rooms').on('child_changed', snapshot => {
-            if (snapshot.key === roomCode) {
-                const room = snapshot.val();
-                if (room && room.chats) {
-                    renderChats(room.chats);
-                }
+        // 기존 child_changed 방식 대신 value 리스너 내에서 한꺼번에 처리하도록 수정하여 누락 방지
+        db.ref(`rooms/${roomCode}/chats`).on('value', snapshot => {
+            const chatsObj = snapshot.val();
+            if (chatsObj) {
+                renderChats(chatsObj);
             }
         });
     }
