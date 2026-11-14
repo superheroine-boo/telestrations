@@ -9,7 +9,7 @@
         body {
             background-color: #f0f4f8;
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -18,7 +18,7 @@
         }
         .container {
             background: white;
-            padding: 25px;
+            padding: 20px;
             border-radius: 20px;
             box-shadow: 0 8px 30px rgba(0,0,0,0.08);
             width: 100%;
@@ -28,7 +28,7 @@
         h1 { margin: 0 0 10px; font-size: 1.8em; color: #34495e; }
         h2 { margin: 0 0 15px; font-size: 1.4em; }
         .hidden { display: none !important; }
-        input[type="text"], button {
+        input[type="text"], select, button {
             padding: 12px 16px;
             font-size: 16px;
             margin: 8px 0;
@@ -36,7 +36,7 @@
             border: 1px solid #dce1e7;
             width: 100%;
         }
-        input[type="text"]:focus { outline: none; border-color: #3498db; }
+        input[type="text"]:focus, select:focus { outline: none; border-color: #3498db; }
         button {
             background-color: #3498db;
             color: white;
@@ -131,11 +131,11 @@
             border-radius: 12px;
             background: #f8f9fa;
             padding: 10px;
-            margin-top: 15px;
+            margin-top: 10px;
             text-align: left;
         }
         .chat-messages {
-            height: 110px;
+            height: 95px;
             overflow-y: auto;
             font-size: 13px;
             margin-bottom: 8px;
@@ -146,24 +146,24 @@
         }
         .chat-msg { background: white; padding: 5px 10px; border-radius: 8px; border: 1px solid #e9ecef; }
         .chat-input-row { display: flex; gap: 6px; margin: 0; }
-        .chat-input-row input { margin: 0; padding: 8px; font-size: 14px; }
-        .chat-input-row button { width: 70px; margin: 0; padding: 8px; font-size: 14px; }
+        .chat-input-row input { margin: 0; padding: 8px; font-size: 13px; }
+        .chat-input-row button { width: 65px; margin: 0; padding: 8px; font-size: 13px; }
 
         .clue-box {
             background: #fff3cd;
             border: 2px dashed #ffc107;
-            padding: 12px;
+            padding: 10px;
             border-radius: 12px;
-            margin: 10px 0;
-            font-size: 1.25em;
+            margin: 8px 0;
+            font-size: 1.2em;
             font-weight: bold;
             color: #856404;
         }
         .timer-box {
-            font-size: 1.1em;
+            font-size: 1.05em;
             font-weight: bold;
             color: #e74c3c;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         canvas {
             border: 2px solid #dfe6e9;
@@ -172,7 +172,16 @@
             background: #ffffff;
             touch-action: none;
             max-width: 100%;
-            margin: 8px 0;
+            margin: 6px 0;
+        }
+        
+        /* 뚜렷한 팔레트 스타일 */
+        .palette-container {
+            background: #f8f9fa;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 8px;
+            margin-bottom: 6px;
         }
         .tools {
             display: flex;
@@ -180,92 +189,79 @@
             justify-content: center;
             align-items: center;
             flex-wrap: wrap;
-            margin-bottom: 6px;
         }
         .tools button {
             width: auto;
             padding: 6px 12px;
             font-size: 13px;
             margin: 0;
-            background-color: #7f8c8d;
+            background-color: #64748b;
         }
-        .tools button.active { background-color: #2c3e50; box-shadow: 0 0 0 2px #3498db; }
+        .tools button.active { background-color: #1e293b; box-shadow: 0 0 0 2px #38bdf8; }
         .color-btn {
-            width: 28px !important;
-            height: 28px;
+            width: 32px !important;
+            height: 32px;
             padding: 0 !important;
             border-radius: 50% !important;
             border: 2px solid #fff !important;
-            box-shadow: 0 0 3px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: pointer;
+        }
+        .color-btn.active-color {
+            border: 3px solid #f59e0b !important;
+            transform: scale(1.15);
         }
         #color-picker {
-            width: 32px;
-            height: 32px;
-            border: none;
+            width: 34px;
+            height: 34px;
+            border: 2px solid #fff;
             border-radius: 50%;
             cursor: pointer;
             padding: 0;
             background: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
-        /* 선 굵기 조절기 스타일 */
+
         .brush-size-bar {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
-            background: #f8f9fa;
+            background: #fff;
             padding: 6px 14px;
-            border-radius: 10px;
-            border: 1px solid #e9ecef;
-            margin-bottom: 6px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin-top: 6px;
             font-size: 13px;
             font-weight: bold;
             color: #555;
         }
         .brush-size-bar input[type="range"] {
-            width: 130px;
+            width: 120px;
             margin: 0;
             cursor: pointer;
         }
         .preview-img {
             max-width: 100%;
+            max-height: 220px;
             border: 2px solid #dfe6e9;
             border-radius: 12px;
-            margin: 10px 0;
+            margin: 8px 0;
             background: #fff;
         }
 
-        /* 스케치북 한 장씩 넘겨보기 카드 스타일 */
-        .book-tabs {
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            padding-bottom: 10px;
-            margin-bottom: 12px;
-        }
-        .book-tabs button {
-            width: auto;
-            white-space: nowrap;
-            padding: 8px 14px;
-            font-size: 14px;
-            background: #ecf0f1;
-            color: #2c3e50;
-        }
-        .book-tabs button.active {
-            background: #3498db;
-            color: white;
-        }
+        /* 스케치북 카드 스타일 */
         .sketchbook-viewer {
             background: #fdfdfd;
             border: 2px solid #dfe6e9;
             border-radius: 16px;
-            padding: 20px 15px;
-            min-height: 330px;
+            padding: 15px;
+            min-height: 310px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             box-shadow: inset 0 0 10px rgba(0,0,0,0.02);
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
         .page-header {
             display: flex;
@@ -275,7 +271,7 @@
             color: #7f8c8d;
             border-bottom: 1px solid #eee;
             padding-bottom: 8px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
         .page-body {
             flex-grow: 1;
@@ -287,26 +283,26 @@
         .big-word-card {
             background: #fff3cd;
             border: 2px dashed #ffc107;
-            padding: 25px 20px;
+            padding: 20px;
             border-radius: 14px;
-            font-size: 1.6em;
+            font-size: 1.5em;
             font-weight: bold;
             color: #856404;
             width: 100%;
-            margin: 15px 0;
+            margin: 10px 0;
         }
         .sketchbook-nav {
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 10px;
-            margin-top: 10px;
+            margin-top: 8px;
         }
         .sketchbook-nav button {
             width: 48%;
             margin: 0;
             padding: 10px;
-            font-size: 15px;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -331,7 +327,7 @@
         </div>
 
         <button class="btn-green" id="btn-create-room">새 방 만들기</button>
-        <div style="margin: 12px 0; color: #bdc3c7; font-size: 14px;">── 또는 방 코드로 입장 ──</div>
+        <div style="margin: 10px 0; color: #bdc3c7; font-size: 14px;">── 또는 방 코드로 입장 ──</div>
         <div style="display: flex; gap: 8px;">
             <input type="text" id="room-code-input" placeholder="방 코드 4자리" maxlength="4" style="text-transform: uppercase; margin: 0;">
             <button id="btn-join-room" style="width: 40%; margin: 0;">입장</button>
@@ -345,7 +341,18 @@
             <span class="room-badge" id="display-room-code"></span>
             <button class="btn-copy" id="btn-copy-code">코드 복사</button>
         </div>
-        <p style="font-size: 14px; color: #7f8c8d;">친구들에게 위 방 코드를 알려주세요! (최소 2명)</p>
+        
+        <!-- 방장 전용 시간 설정 -->
+        <div id="host-settings" style="background: #f8f9fa; padding: 10px; border-radius: 10px; border: 1px solid #e9ecef; margin-bottom: 10px;" class="hidden">
+            <label style="font-size: 14px; font-weight: bold; color: #34495e;">⏱️ 턴당 제한 시간: </label>
+            <select id="time-limit-select" style="width: auto; padding: 6px; font-size: 14px; margin-left: 5px;">
+                <option value="30">30초</option>
+                <option value="45">45초</option>
+                <option value="60" selected>60초</option>
+            </select>
+        </div>
+
+        <p style="font-size: 13px; color: #7f8c8d; margin: 5px 0;">친구들에게 위 방 코드를 알려주세요! (최소 2명)</p>
         <ul class="player-list" id="player-list"></ul>
         
         <!-- 실시간 채팅창 -->
@@ -357,61 +364,76 @@
             </div>
         </div>
 
-        <button id="btn-start-game" class="btn-green hidden" style="margin-top:15px;">모두 모였어요! 게임 시작</button>
-        <p id="waiting-host-msg" style="color: #95a5a6; font-size: 14px; margin-top:15px;">방장이 게임을 시작할 때까지 기다려주세요...</p>
+        <button id="btn-start-game" class="btn-green hidden" style="margin-top:12px;">모두 모였어요! 게임 시작</button>
+        <p id="waiting-host-msg" style="color: #95a5a6; font-size: 13px; margin-top:10px;">방장이 게임을 시작할 때까지 기다려주세요...</p>
     </div>
 
     <!-- 3. 게임 진행 -->
     <div id="screen-game" class="hidden">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-            <span id="round-indicator" style="font-weight: bold; color: #3498db;">라운드 1 / 3</span>
-            <span id="submit-status" style="font-size: 13px; color: #7f8c8d;">제출 현황: 0/0</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span id="round-indicator" style="font-weight: bold; color: #3498db; font-size: 14px;">라운드 1 / 3</span>
+            <span id="submit-status" style="font-size: 12px; color: #7f8c8d;">제출 현황: 0/0</span>
         </div>
-        <div class="timer-box" id="timer-display">⏳ 남은 시간: 30초</div>
+        <div class="timer-box" id="timer-display">⏳ 남은 시간: 60초</div>
 
         <div id="mode-draw" class="hidden">
-            <p style="margin: 2px 0; font-size: 14px;">아래 제시어를 그림으로 표현하세요!</p>
+            <p style="margin: 2px 0; font-size: 13px;">제시어를 그림으로 표현하세요!</p>
             <div class="clue-box" id="draw-clue-text">제시어</div>
             
-            <div class="tools">
-                <button class="color-btn" style="background:#2c3e50;" data-color="#2c3e50"></button>
-                <button class="color-btn" style="background:#e74c3c;" data-color="#e74c3c"></button>
-                <button class="color-btn" style="background:#3498db;" data-color="#3498db"></button>
-                <button class="color-btn" style="background:#2ecc71;" data-color="#2ecc71"></button>
-                <button class="color-btn" style="background:#f1c40f;" data-color="#f1c40f"></button>
-                <input type="color" id="color-picker" value="#3498db" title="팔레트에서 색상 선택">
-                <button id="btn-eraser">지우개</button>
-                <button id="btn-clear" style="background:#95a5a6;">전체삭제</button>
+            <!-- 뚜렷한 팔레트 영역 -->
+            <div class="palette-container">
+                <div class="tools">
+                    <button class="color-btn active-color" style="background:#2c3e50;" data-color="#2c3e50" title="진회색"></button>
+                    <button class="color-btn" style="background:#e74c3c;" data-color="#e74c3c" title="빨강"></button>
+                    <button class="color-btn" style="background:#3498db;" data-color="#3498db" title="파랑"></button>
+                    <button class="color-btn" style="background:#2ecc71;" data-color="#2ecc71" title="초록"></button>
+                    <button class="color-btn" style="background:#f1c40f;" data-color="#f1c40f" title="노랑"></button>
+                    <button class="color-btn" style="background:#9b59b6;" data-color="#9b59b6" title="보라"></button>
+                    <input type="color" id="color-picker" value="#3498db" title="커스텀 색상 선택">
+                    <button id="btn-eraser">지우개</button>
+                    <button id="btn-clear" style="background:#95a5a6;">전체삭제</button>
+                </div>
+                <div class="brush-size-bar">
+                    <span>🖌️ 굵기</span>
+                    <input type="range" id="brush-size-slider" min="1" max="25" value="4">
+                    <span id="brush-size-label" style="min-width: 30px; color: #3498db;">4px</span>
+                </div>
             </div>
 
-            <!-- 선 굵기 조절 슬라이더 -->
-            <div class="brush-size-bar">
-                <span>🖌️ 선 굵기</span>
-                <input type="range" id="brush-size-slider" min="1" max="25" value="4">
-                <span id="brush-size-label" style="min-width: 34px; color: #3498db;">4px</span>
-            </div>
-
-            <canvas id="canvas" width="420" height="300"></canvas>
-            <button id="btn-submit-draw" class="btn-green">그림 제출하기</button>
+            <canvas id="canvas" width="420" height="260"></canvas>
+            <button id="btn-submit-draw" class="btn-green" style="margin-top: 4px;">그림 제출하기</button>
         </div>
 
         <div id="mode-guess" class="hidden">
-            <p style="margin: 5px 0;">이 그림은 무엇을 표현한 걸까요?</p>
+            <p style="margin: 4px 0; font-size: 14px;">이 그림은 무엇을 표현한 걸까요?</p>
             <img id="guess-image" class="preview-img" src="" alt="이전 플레이어의 그림">
             <input type="text" id="guess-input" placeholder="정답(단어)을 입력하세요" maxlength="20">
             <button id="btn-submit-guess" class="btn-orange">단어 제출하기</button>
         </div>
 
-        <div id="mode-wait-turn" class="hidden" style="padding: 40px 0;">
+        <div id="mode-wait-turn" class="hidden" style="padding: 15px 0;">
             <h3>✅ 제출 완료!</h3>
-            <p style="color: #7f8c8d;">다른 친구들이 끝낼 때까지 잠시 기다려주세요...</p>
+            <div id="waiting-status-board" style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 10px; padding: 12px; margin: 10px 0; font-size: 14px; text-align: left;">
+                <p style="margin: 0; font-weight: bold; color: #2c3e50; text-align: center;">🔄 친구들 플레이 현황</p>
+                <div id="live-progress-list" style="margin-top: 8px; display: flex; flex-direction: column; gap: 4px;"></div>
+            </div>
+            <p style="color: #7f8c8d; font-size: 13px;">모두 완료될 때까지 기다려주세요...</p>
+        </div>
+
+        <!-- 게임 진행 중 하단 미니 채팅창 -->
+        <div class="chat-container">
+            <div class="chat-messages" id="game-chat-messages"></div>
+            <div class="chat-input-row">
+                <input type="text" id="game-chat-input" placeholder="대화 나누기..." maxlength="50">
+                <button id="btn-send-game-chat">전송</button>
+            </div>
         </div>
     </div>
 
-    <!-- 4. 결과 발표 (한 장씩 넘겨보는 스케치북) -->
+    <!-- 4. 결과 발표 (방장 연동형 스케치북) -->
     <div id="screen-result" class="hidden">
         <h2>📖 스케치북 결과 발표!</h2>
-        <p style="font-size: 13px; color: #7f8c8d; margin-bottom: 10px;">스케치북을 선택하고 한 장씩 넘겨보세요!</p>
+        <p style="font-size: 12px; color: #7f8c8d; margin-bottom: 6px;" id="result-guide-msg">스케치북을 선택하고 감상하세요!</p>
         <div class="book-tabs" id="book-tabs"></div>
         
         <div class="sketchbook-viewer">
@@ -420,19 +442,30 @@
                 <span id="page-counter">1 / 4 페이지</span>
             </div>
             <div class="page-body" id="page-body"></div>
-            <div class="sketchbook-nav">
+            <div class="sketchbook-nav" id="sketchbook-nav-container">
                 <button id="btn-prev-page" style="background-color: #7f8c8d;">⬅️ 이전 페이지</button>
                 <button id="btn-next-page">다음 페이지 ➡️</button>
             </div>
         </div>
 
-        <button id="btn-play-again" class="btn-green" style="margin-top: 6px;">다음 판 바로 시작하기 (대기실로)</button>
-        <button id="btn-restart" style="margin-top: 5px; background-color:#95a5a6;">처음 로비로 나가기</button>
+        <!-- 결과 발표 화면 채팅창 -->
+        <div class="chat-container" style="margin-top: 8px;">
+            <div class="chat-messages" id="result-chat-messages"></div>
+            <div class="chat-input-row">
+                <input type="text" id="result-chat-input" placeholder="다 함께 수다 떨기..." maxlength="50">
+                <button id="btn-send-result-chat">전송</button>
+            </div>
+        </div>
+
+        <button id="btn-play-again" class="btn-green hidden" style="margin-top: 8px;">다음 판 바로 시작하기 (대기실로)</button>
+        <button id="btn-restart" style="margin-top: 4px; background-color:#95a5a6;" class="hidden">처음 로비로 나가기</button>
     </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<!-- 방국지적인 축하 폭죽 효과 라이브러리 -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <script>
     const firebaseConfig = {
@@ -465,13 +498,13 @@
     let lastRenderedRound = -1;
 
     let timerInterval = null;
-    const TIME_LIMIT = 30;
+    let gameTimeLimit = 60;
 
-    // 결과 화면 스케치북 페이지 상태
-    let activeBookSteps = [];
+    // 결과 화면 상태
+    let activeBookId = '';
     let currentStepIndex = 0;
 
-    // 아바타 선택 이벤트
+    // 아바타 선택
     document.querySelectorAll('.avatar-option').forEach(el => {
         el.addEventListener('click', () => {
             document.querySelectorAll('.avatar-option').forEach(o => o.classList.remove('selected'));
@@ -530,23 +563,24 @@
     }, { passive: false });
     canvas.addEventListener('touchend', () => isDrawing = false);
 
-    // 색상 버튼 선택
+    // 팔레트 색상 선택 (이미 선택된 색을 다시 누르거나 다른 색 선택 시 직관적 반영)
     document.querySelectorAll('.color-btn').forEach(btn => {
         btn.addEventListener('click', () => {
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active-color'));
+            btn.classList.add('active-color');
             brushColor = btn.getAttribute('data-color');
             isEraserMode = false;
             document.getElementById('btn-eraser').classList.remove('active');
         });
     });
 
-    // 컬러 팔레트 선택
     document.getElementById('color-picker').addEventListener('input', (e) => {
+        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active-color'));
         brushColor = e.target.value;
         isEraserMode = false;
         document.getElementById('btn-eraser').classList.remove('active');
     });
 
-    // 선 굵기 슬라이더 조절
     const sizeSlider = document.getElementById('brush-size-slider');
     const sizeLabel = document.getElementById('brush-size-label');
     sizeSlider.addEventListener('input', (e) => {
@@ -554,9 +588,9 @@
         sizeLabel.innerText = `${brushSize}px`;
     });
 
-    // 지우개 모드
     document.getElementById('btn-eraser').addEventListener('click', () => {
         isEraserMode = true;
+        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active-color'));
         document.getElementById('btn-eraser').classList.add('active');
         if (brushSize < 12) {
             brushSize = 16;
@@ -567,7 +601,6 @@
 
     document.getElementById('btn-clear').addEventListener('click', () => initCanvas());
 
-    // 방 코드 복사 버튼
     document.getElementById('btn-copy-code').addEventListener('click', () => {
         navigator.clipboard.writeText(roomCode).then(() => {
             const btn = document.getElementById('btn-copy-code');
@@ -589,10 +622,7 @@
 
     document.getElementById('btn-create-room').addEventListener('click', () => {
         myName = document.getElementById('nickname').value.trim();
-        if (!myName) {
-            alert('닉네임을 입력해주세요!');
-            return;
-        }
+        if (!myName) return alert('닉네임을 입력해주세요!');
 
         roomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
         isHost = true;
@@ -600,48 +630,35 @@
         db.ref(`rooms/${roomCode}`).set({
             host: myId,
             status: 'waiting',
+            timeLimit: 60,
             currentRound: 0,
             players: { [myId]: { name: myName, avatar: myAvatar, order: 0 } }
-        }).then(() => {
-            listenRoom();
-        }).catch((err) => {
-            alert('방 생성 실패: ' + err.message);
-        });
+        }).then(() => listenRoom());
     });
 
     document.getElementById('btn-join-room').addEventListener('click', () => {
         myName = document.getElementById('nickname').value.trim();
         roomCode = document.getElementById('room-code-input').value.trim().toUpperCase();
-        if (!myName) {
-            alert('닉네임을 입력해주세요!');
-            return;
-        }
-        if (roomCode.length !== 4) {
-            alert('4자리 방 코드를 입력해주세요!');
-            return;
-        }
+        if (!myName) return alert('닉네임을 입력해주세요!');
+        if (roomCode.length !== 4) return alert('4자리 방 코드를 입력해주세요!');
 
         db.ref(`rooms/${roomCode}`).get().then((snapshot) => {
-            if (!snapshot.exists()) {
-                alert('존재하지 않는 방 코드입니다.');
-                return;
-            }
-
+            if (!snapshot.exists()) return alert('존재하지 않는 방 코드입니다.');
             const data = snapshot.val();
-            if (data.status !== 'waiting' && data.status !== 'playing') {
-                alert('이미 종료되었거나 잘못된 방입니다.');
-                return;
-            }
+            if (data.status !== 'waiting') return alert('이미 시작되었거나 종료된 방입니다.');
 
             const playerCount = Object.keys(data.players || {}).length;
             db.ref(`rooms/${roomCode}/players`).update({
                 [myId]: { name: myName, avatar: myAvatar, order: playerCount }
-            }).then(() => {
-                listenRoom();
-            });
-        }).catch((err) => {
-            alert('입장 중 오류 발생: ' + err.message);
+            }).then(() => listenRoom());
         });
+    });
+
+    // 방장 시간 설정 변경 반영
+    document.getElementById('time-limit-select').addEventListener('change', (e) => {
+        if (!isHost) return;
+        const val = parseInt(e.target.value, 10);
+        db.ref(`rooms/${roomCode}`).update({ timeLimit: val });
     });
 
     document.getElementById('btn-start-game').addEventListener('click', () => {
@@ -672,7 +689,8 @@
             status: 'waiting',
             currentRound: 0,
             books: null,
-            submissions: null
+            submissions: null,
+            resultState: null
         });
     });
 
@@ -680,13 +698,13 @@
     document.getElementById('btn-submit-guess').addEventListener('click', submitTurn);
     document.getElementById('btn-restart').addEventListener('click', () => location.reload());
 
-    function sendChat() {
-        const input = document.getElementById('chat-input');
+    // 통합 채팅 전송 함수
+    function sendChat(inputElId) {
+        const input = document.getElementById(inputElId);
         const text = input.value.trim();
         if (!text) return;
 
-        const chatRef = db.ref(`rooms/${roomCode}/chats`);
-        chatRef.push({
+        db.ref(`rooms/${roomCode}/chats`).push({
             name: myName,
             avatar: myAvatar,
             message: text,
@@ -695,33 +713,40 @@
         input.value = '';
     }
 
-    document.getElementById('btn-send-chat').addEventListener('click', sendChat);
-    document.getElementById('chat-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendChat();
-    });
+    document.getElementById('btn-send-chat').addEventListener('click', () => sendChat('chat-input'));
+    document.getElementById('chat-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChat('chat-input'); });
+
+    document.getElementById('btn-send-game-chat').addEventListener('click', () => sendChat('game-chat-input'));
+    document.getElementById('game-chat-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChat('game-chat-input'); });
+
+    document.getElementById('btn-send-result-chat').addEventListener('click', () => sendChat('result-chat-input'));
+    document.getElementById('result-chat-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChat('result-chat-input'); });
 
     function listenRoom() {
         db.ref(`rooms/${roomCode}`).on('value', (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
             currentRoomData = data;
+            gameTimeLimit = data.timeLimit || 60;
 
             const playerIds = Object.keys(data.players || {}).sort((a, b) => data.players[a].order - data.players[b].order);
 
-            const chatMsgsEl = document.getElementById('chat-messages');
-            if (data.chats) {
-                const chatArr = Object.values(data.chats);
-                chatMsgsEl.innerHTML = chatArr.map(c => `<div class="chat-msg"><span>${c.avatar || '🐶'}</span> <b>${c.name}:</b> ${c.message}</div>`).join('');
-                chatMsgsEl.scrollTop = chatMsgsEl.scrollHeight;
-            } else {
-                chatMsgsEl.innerHTML = '<div style="color:#adb5bd; text-align:center; padding-top:20px;">채팅을 시작해보세요!</div>';
-            }
+            // 실시간 채팅 동기화 (대기실, 게임중, 결과화면 모두 반영)
+            const chatHtml = data.chats ? Object.values(data.chats).map(c => `<div class="chat-msg"><span>${c.avatar || '🐶'}</span> <b>${c.name}:</b> ${c.message}</div>`).join('') : '<div style="color:#adb5bd; text-align:center;">자유롭게 대화를 나눠보세요!</div>';
+            ['chat-messages', 'game-chat-messages', 'result-chat-messages'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.innerHTML = chatHtml;
+                    el.scrollTop = el.scrollHeight;
+                }
+            });
 
             if (data.status === 'waiting') {
                 stopTimer();
                 lastRenderedRound = -1;
                 showScreen('screen-waiting');
                 document.getElementById('display-room-code').innerText = roomCode;
+                document.getElementById('time-limit-select').value = gameTimeLimit;
                 
                 const listEl = document.getElementById('player-list');
                 listEl.innerHTML = playerIds.map(id => {
@@ -731,10 +756,12 @@
 
                 if (isHost || data.host === myId) {
                     isHost = true;
+                    document.getElementById('host-settings').classList.remove('hidden');
                     document.getElementById('btn-start-game').classList.remove('hidden');
                     document.getElementById('btn-start-game').disabled = playerIds.length < 2;
                     document.getElementById('waiting-host-msg').classList.add('hidden');
                 } else {
+                    document.getElementById('host-settings').classList.add('hidden');
                     document.getElementById('btn-start-game').classList.add('hidden');
                     document.getElementById('waiting-host-msg').classList.remove('hidden');
                 }
@@ -748,6 +775,9 @@
                 const submissions = (data.submissions && data.submissions[round]) || {};
                 const submittedCount = Object.keys(submissions).length;
                 document.getElementById('submit-status').innerText = `제출 현황: ${submittedCount} / ${totalRounds}`;
+
+                // 대기 중인 화면에서 누가 그리고/맞히는 중인지 세부 실시간 표시
+                updateLiveProgress(data, playerIds, round, submissions);
 
                 if (isHost && submittedCount === totalRounds) {
                     stopTimer();
@@ -769,9 +799,31 @@
             else if (data.status === 'finished') {
                 stopTimer();
                 showScreen('screen-result');
-                renderResults(data, playerIds);
+                renderResultsSync(data, playerIds);
             }
         });
+    }
+
+    // 다른 플레이어들의 실시간 상태 표시
+    function updateLiveProgress(data, playerIds, round, submissions) {
+        const progressListEl = document.getElementById('live-progress-list');
+        if (!progressListEl) return;
+
+        let html = '';
+        playerIds.forEach(pid => {
+            const p = data.players[pid];
+            const isDone = submissions[pid];
+            const myIndex = playerIds.indexOf(pid);
+            const targetBookOwnerId = playerIds[(myIndex - (round - 1) + playerIds.length) % playerIds.length];
+            const prevStep = data.books[targetBookOwnerId].steps[round - 1];
+            const actionText = prevStep.type === 'word' ? '그림 그리는 중 🎨' : '단어 맞히는 중 ✍️';
+
+            html += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 3px 0;">
+                <span>${p.avatar} <b>${p.name}</b></span>
+                <span style="color: ${isDone ? '#2ecc71' : '#e67e22'}; font-size: 13px;">${isDone ? '✅ 제출 완료' : actionText}</span>
+            </div>`;
+        });
+        progressListEl.innerHTML = html;
     }
 
     function setupMyTurn(data, playerIds, round) {
@@ -800,7 +852,7 @@
 
     function startTimer() {
         stopTimer();
-        let timeLeft = TIME_LIMIT;
+        let timeLeft = gameTimeLimit;
         const timerEl = document.getElementById('timer-display');
         timerEl.innerText = `⏳ 남은 시간: ${timeLeft}초`;
 
@@ -836,10 +888,10 @@
         let newStep = null;
         if (prevStep.type === 'word') {
             const imgData = canvas.toDataURL('image/png', 0.7);
-            newStep = { type: 'drawing', author: `${myAvatar} ${myName} (시간초과)`, content: imgData };
+            newStep = { type: 'drawing', author: `${myAvatar} ${myName}`, content: imgData };
         } else {
-            const guessText = document.getElementById('guess-input').value.trim() || '시간초과';
-            newStep = { type: 'word', author: `${myAvatar} ${myName} (시간초과)`, content: guessText };
+            const guessText = document.getElementById('guess-input').value.trim() || '(시간초과)';
+            newStep = { type: 'word', author: `${myAvatar} ${myName}`, content: guessText };
         }
 
         db.ref(`rooms/${roomCode}/books/${targetBookOwnerId}/steps`).update({
@@ -873,6 +925,8 @@
             newStep = { type: 'word', author: `${myAvatar} ${myName}`, content: guessText };
         }
 
+        db.ref(`rooms/${roomCode}/books/${targetBookOwnerId}/books/${targetBookOwnerId}` ? '' : ''); // placeholder
+
         db.ref(`rooms/${roomCode}/books/${targetBookOwnerId}/steps`).update({
             [round]: newStep
         }).then(() => {
@@ -885,71 +939,90 @@
     function advanceRound(data, playerIds) {
         const nextRound = data.currentRound + 1;
         if (nextRound > playerIds.length) {
-            db.ref(`rooms/${roomCode}`).update({ status: 'finished' });
+            db.ref(`rooms/${roomCode}`).update({ 
+                status: 'finished',
+                resultState: { bookId: playerIds[0], stepIndex: 0 }
+            });
         } else {
             db.ref(`rooms/${roomCode}`).update({ currentRound: nextRound });
         }
     }
 
-    // 결과 발표: 스케치북 탭 및 한 장씩 넘겨보기 초기화
-    function renderResults(data, playerIds) {
+    // 결과 발표 렌더링 (방장 연동형)
+    function renderResultsSync(data, playerIds) {
         const tabsEl = document.getElementById('book-tabs');
         tabsEl.innerHTML = '';
 
-        playerIds.forEach((pid, idx) => {
+        const resState = data.resultState || { bookId: playerIds[0], stepIndex: 0 };
+        activeBookId = resState.bookId;
+        currentStepIndex = resState.stepIndex;
+
+        playerIds.forEach((pid) => {
             const btn = document.createElement('button');
             btn.innerText = `${data.books[pid].ownerName}의 스케치북`;
-            btn.onclick = () => selectSketchbook(data.books[pid], btn);
+            if (pid === activeBookId) btn.classList.add('active');
+            
+            // 방장만 스케치북 선택 변경 가능, 혹은 누구나 누르면 방장 권한으로 동기화 요청
+            btn.onclick = () => {
+                db.ref(`rooms/${roomCode}/resultState`).set({ bookId: pid, stepIndex: 0 });
+            };
             tabsEl.appendChild(btn);
-            if (idx === 0) selectSketchbook(data.books[pid], btn);
         });
-    }
 
-    function selectSketchbook(book, activeBtn) {
-        document.querySelectorAll('#book-tabs button').forEach(b => b.classList.remove('active'));
-        activeBtn.classList.add('active');
+        const targetBook = data.books[activeBookId];
+        const steps = Object.values(targetBook.steps);
+        const step = steps[currentStepIndex];
 
-        activeBookSteps = Object.values(book.steps);
-        currentStepIndex = 0;
-        renderCurrentPage();
-    }
-
-    function renderCurrentPage() {
-        const total = activeBookSteps.length;
-        const step = activeBookSteps[currentStepIndex];
-        
         const authorEl = document.getElementById('page-author');
         const counterEl = document.getElementById('page-counter');
         const bodyEl = document.getElementById('page-body');
+        const guideMsg = document.getElementById('result-guide-msg');
 
-        counterEl.innerText = `${currentStepIndex + 1} / ${total} 페이지`;
+        if (isHost || data.host === myId) {
+            document.getElementById('sketchbook-nav-container').classList.remove('hidden');
+            document.getElementById('btn-play-again').classList.remove('hidden');
+            document.getElementById('btn-restart').classList.remove('hidden');
+            guideMsg.innerText = "방장이 페이지를 넘기면 모든 친구들의 화면이 실시간으로 함께 움직입니다!";
+        } else {
+            document.getElementById('sketchbook-nav-container').classList.add('hidden');
+            document.getElementById('btn-play-again').classList.add('hidden');
+            document.getElementById('btn-restart').classList.add('hidden');
+            guideMsg.innerText = "방장이 스케치북 페이지를 넘기는 중입니다 ㅋㅋㅋ 함께 구경하세요!";
+        }
+
+        counterEl.innerText = `${currentStepIndex + 1} / ${steps.length} 페이지`;
 
         if (currentStepIndex === 0) {
             authorEl.innerText = '🎯 최초 제시어';
             bodyEl.innerHTML = `<div class="big-word-card">${step.content}</div>`;
         } else if (step.type === 'drawing') {
             authorEl.innerText = `🎨 ${step.author}의 그림`;
-            bodyEl.innerHTML = `<img src="${step.content}" class="preview-img" style="max-height: 250px;">`;
+            bodyEl.innerHTML = `<img src="${step.content}" class="preview-img">`;
         } else {
             authorEl.innerText = `💬 ${step.author}의 추측`;
             bodyEl.innerHTML = `<div class="big-word-card" style="background:#e8f4fd; border-color:#3498db; color:#2980b9;">${step.content}</div>`;
+            
+            // 마지막 페이지나 정답 맞힘 순간에 축하 폭죽 팡팡!
+            if (currentStepIndex === steps.length - 1) {
+                confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+            }
         }
-
-        document.getElementById('btn-prev-page').disabled = currentStepIndex === 0;
-        document.getElementById('btn-next-page').disabled = currentStepIndex === total - 1;
     }
 
+    // 방장이 페이지 넘길 때 Firebase에 동기화
     document.getElementById('btn-prev-page').addEventListener('click', () => {
+        if (!isHost) return;
         if (currentStepIndex > 0) {
-            currentStepIndex--;
-            renderCurrentPage();
+            db.ref(`rooms/${roomCode}/resultState`).update({ stepIndex: currentStepIndex - 1 });
         }
     });
 
     document.getElementById('btn-next-page').addEventListener('click', () => {
-        if (currentStepIndex < activeBookSteps.length - 1) {
-            currentStepIndex++;
-            renderCurrentPage();
+        if (!isHost && currentRoomData.host !== myId) return;
+        const targetBook = currentRoomData.books[activeBookId];
+        const maxLen = Object.keys(targetBook.steps).length;
+        if (currentStepIndex < maxLen - 1) {
+            db.ref(`rooms/${roomCode}/resultState`).update({ stepIndex: currentStepIndex + 1 });
         }
     });
 </script>
