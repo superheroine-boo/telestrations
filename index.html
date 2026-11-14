@@ -207,8 +207,8 @@
                 </div>
                 <div class="brush-size-bar">
                     <span>🖌️ 굵기</span>
-                    <input type="range" id="brush-size-slider" min="1" max="25" value="4">
-                    <span id="brush-size-label" style="min-width: 30px; color: #3498db;">4px</span>
+                    <input type="range" id="brush-size-slider" min="1" max="25" value="5">
+                    <span id="brush-size-label" style="min-width: 30px; color: #3498db;">5px</span>
                 </div>
             </div>
 
@@ -289,7 +289,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <script>
     const firebaseConfig = {
@@ -440,7 +439,7 @@
     const ctx = canvas.getContext('2d');
     let isDrawing = false;
     let brushColor = '#2c3e50';
-    let brushSize = 4;
+    let brushSize = 5; // 기본 선 굵기를 5px로 설정
     let isEraserMode = false;
 
     function initCanvas() {
@@ -988,7 +987,6 @@
     document.getElementById('btn-submit-draw').addEventListener('click', submitDrawAction);
     document.getElementById('btn-submit-guess').addEventListener('click', submitGuessAction);
 
-    // 정답(글자) 입력창에서 엔터키 입력 시 바로 제출되도록 처리
     document.getElementById('guess-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             submitGuessAction();
@@ -1033,14 +1031,6 @@
 
     function renderResultScreen(room) {
         if (timerInterval) clearInterval(timerInterval);
-        
-        const mainContainer = document.getElementById('main-container');
-        mainContainer.classList.add('shake');
-        setTimeout(() => mainContainer.classList.remove('shake'), 400);
-
-        if (typeof confetti === 'function') {
-            confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-        }
 
         const books = room.books || {};
         const bookKeys = Object.keys(books);
@@ -1222,7 +1212,6 @@
     setupChat('result-chat-input', 'btn-send-result-chat');
 
     function listenChats() {
-        // 기존 child_changed 방식 대신 value 리스너 내에서 한꺼번에 처리하도록 수정하여 누락 방지
         db.ref(`rooms/${roomCode}/chats`).on('value', snapshot => {
             const chatsObj = snapshot.val();
             if (chatsObj) {
