@@ -111,8 +111,10 @@
         .player-sidebar h3 { margin: 0 0 10px; font-size: 14px; color: #34495e; text-align: center; }
         .side-player { display: flex; align-items: center; gap: 6px; padding: 7px 8px; margin-bottom: 6px; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 10px; font-size: 13px; font-weight: bold; }
         .side-player.me { border-color: #3498db; background: #eaf5fe; }
-        .side-player .side-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .side-player .side-status { font-size: 12px; }
+        .side-player .side-info { flex: 1; min-width: 0; }
+        .side-player .side-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .side-player .side-status { font-size: 11px; font-weight: normal; color: #64748b; margin-top: 1px; }
+        .side-player .side-status.done { color: #2ecc71; font-weight: bold; }
         @media (max-width: 760px) {
             .layout { flex-direction: column; align-items: stretch; gap: 10px; }
             .player-sidebar { order: -1; flex: none; position: static; padding: 10px; border-radius: 16px; }
@@ -130,6 +132,7 @@
     <div id="screen-lobby">
         <h1>🎨 텔레스트레이션</h1>
         <p style="color: #7f8c8d; margin-bottom: 12px;">친구들과 실시간 그림 전달 게임!</p>
+        <p style="color:#bdc3c7; font-size:11px; margin:-8px 0 10px;">버전 v5 · 참가자 패널 / 요약 공개 / 제출 상태 구분</p>
 
         <input type="text" id="nickname" placeholder="닉네임을 입력하세요 (예: 수현)" maxlength="10">
 
@@ -666,6 +669,27 @@
         });
     });
 
+    // 이번 라운드에 해당 플레이어가 맡은 일: 'draw'(그리기) / 'guess'(맞히기)
+    function getPlayerTask(room, pid) {
+        const round = room.currentRound;
+        const ids = Object.keys(room.players || {}).sort();
+        const idx = ids.indexOf(pid);
+        if (idx < 0 || !room.books) return null;
+        const owner = ids[(idx + (round - 1)) % ids.length];
+        const book = room.books['book_' + owner];
+        const page = book && book.pages ? book.pages[round - 1] : null;
+        if (!page) return null;
+        return page.type === 'word' ? 'draw' : 'guess';
+    }
+
+    function taskLabel(room, pid, subs) {
+        if (subs[pid]) return { text: '✅ 제출 완료', done: true };
+        const task = getPlayerTask(room, pid);
+        if (task === 'draw') return { text: '✍️ 그림 그리는 중...', done: false };
+        if (task === 'guess') return { text: '🤔 제시어 맞히는 중...', done: false };
+        return { text: '⏳ 준비 중...', done: false };
+    }
+
     function renderSidebar(room) {
         const sidebar = document.getElementById('player-sidebar');
         const list = document.getElementById('side-player-list');
@@ -679,9 +703,12 @@
         entries.forEach(([pid, p]) => {
             const div = document.createElement('div');
             div.className = 'side-player' + (pid === myId ? ' me' : '');
-            let status = '';
-            if (room.status === 'playing') status = subs[pid] ? '✅' : '✍️';
-            div.innerHTML = `<span>${p.avatar}</span><span class="side-name">${escapeHtml(p.name)}${pid === myId ? ' (나)' : ''}</span>${pid === room.host ? '<span>👑</span>' : ''}<span class="side-status">${status}</span>`;
+            let statusHtml = '';
+            if (room.status === 'playing') {
+                const t = taskLabel(room, pid, subs);
+                statusHtml = `<div class="side-status${t.done ? ' done' : ''}">${t.text}</div>`;
+            }
+            div.innerHTML = `<span>${p.avatar}</span><div class="side-info"><div class="side-name">${escapeHtml(p.name)}${pid === myId ? ' (나)' : ''}</div>${statusHtml}</div>${pid === room.host ? '<span>👑</span>' : ''}`;
             list.appendChild(div);
         });
         sidebar.classList.remove('hidden');
@@ -991,7 +1018,8 @@
             div.style.padding = '6px 10px';
             div.style.borderRadius = '6px';
             div.style.border = '1px solid #e2e8f0';
-            div.innerHTML = `<span>${p.avatar} ${p.name}</span> <span style="font-weight:bold; color:${isDone ? '#2ecc71' : '#e67e22'}">${isDone ? '✅ 제출 완료' : '✍️ 그리는 중...'}</span>`;
+            const t = taskLabel(room, pid, submissions);
+            div.innerHTML = `<span>${p.avatar} ${escapeHtml(p.name)}</span> <span style="font-weight:bold; color:${isDone ? '#2ecc71' : '#e67e22'}">${t.text}</span>`;
             container.appendChild(div);
         });
     }
