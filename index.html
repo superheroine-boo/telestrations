@@ -104,10 +104,27 @@
         .summary-step-item { min-width: 80px; background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 5px; text-align: center; font-size: 11px; }
         .summary-step-item img { width: 70px; height: 50px; object-fit: cover; border-radius: 4px; margin-top: 3px; }
         .spy-reveal-box { background: #f3e8ff; border: 2px solid #a855f7; border-radius: 12px; padding: 10px; margin-top: 8px; text-align: center; font-weight: bold; color: #581c87; }
+
+        .layout { display: flex; gap: 14px; align-items: flex-start; justify-content: center; width: 100%; max-width: 780px; }
+        .layout .container { flex: 1 1 auto; min-width: 0; }
+        .player-sidebar { flex: 0 0 180px; background: white; border-radius: 20px; padding: 14px 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); position: sticky; top: 15px; text-align: left; }
+        .player-sidebar h3 { margin: 0 0 10px; font-size: 14px; color: #34495e; text-align: center; }
+        .side-player { display: flex; align-items: center; gap: 6px; padding: 7px 8px; margin-bottom: 6px; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 10px; font-size: 13px; font-weight: bold; }
+        .side-player.me { border-color: #3498db; background: #eaf5fe; }
+        .side-player .side-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .side-player .side-status { font-size: 12px; }
+        @media (max-width: 760px) {
+            .layout { flex-direction: column; align-items: stretch; gap: 10px; }
+            .player-sidebar { order: -1; flex: none; position: static; padding: 10px; border-radius: 16px; }
+            .player-sidebar h3 { margin-bottom: 6px; }
+            #side-player-list { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+            .side-player { margin-bottom: 0; }
+        }
     </style>
 </head>
 <body>
 
+<div class="layout">
 <div class="container" id="main-container">
     <!-- 1. 로비 -->
     <div id="screen-lobby">
@@ -174,7 +191,7 @@
 
         <button id="btn-start-game" class="btn-green hidden" style="margin-top:12px;">모두 모였어요! 게임 시작</button>
         <p id="waiting-host-msg" style="color: #95a5a6; font-size: 13px; margin-top:10px;">방장이 게임을 시작할 때까지 기다려주세요...</p>
-        <button id="btn-leave-room-wait" class="btn-red" style="margin-top: 8px;">🚪 방 나가기</button>
+        <button id="btn-leave-room-wait" class="btn-red" style="margin-top: 8px;">🚪 방 나가기 (처음 화면으로)</button>
     </div>
 
     <!-- 3. 게임 진행 -->
@@ -245,7 +262,7 @@
     <!-- 4. 결과 발표 -->
     <div id="screen-result" class="hidden">
         <h2>📖 스케치북 결과 구경하기</h2>
-        <p style="font-size: 12px; color: #7f8c8d; margin-bottom: 6px;" id="result-guide-msg">방장이 선택한 스케치북을 다 함께 감상하세요!</p>
+        <p style="font-size: 12px; color: #7f8c8d; margin-bottom: 6px;" id="result-guide-msg">스케치북을 넘겨보며 다 함께 감상하세요!</p>
 
         <div class="book-tabs" id="book-tabs"></div>
 
@@ -260,6 +277,9 @@
                 <button id="btn-next-page">다음 페이지 ➡️</button>
             </div>
         </div>
+
+        <button id="btn-show-summary" class="btn-orange hidden" style="margin-top: 4px;">📊 최종 요약 공개하기</button>
+        <p id="summary-wait-msg" class="hidden" style="color: #95a5a6; font-size: 13px; margin: 4px 0 8px;">스케치북을 다 같이 구경해보세요! 방장이 요약을 공개하면 아래에 나타나요.</p>
 
         <div id="summary-view-box" class="hidden">
             <div class="summary-box">
@@ -281,10 +301,17 @@
             </div>
         </div>
 
-        <p id="guest-end-msg" class="hidden" style="color: #95a5a6; font-size: 13px; margin: 8px 0 0;">방장이 다시 할지 나갈지 선택할 때까지 기다려주세요...</p>
-        <button id="btn-play-again" class="btn-green hidden" style="margin-top: 6px;">🔄 다시 하기 (대기실로)</button>
-        <button id="btn-leave-room-result" class="btn-red" style="margin-top: 6px;">🚪 나가기 (로비로)</button>
+        <p id="guest-end-msg" class="hidden" style="color: #95a5a6; font-size: 13px; margin: 8px 0 0;">방장이 '다시 하기'를 누르면 모두 대기실로 이동해요. 먼저 돌아가고 싶으면 아래 버튼을 눌러주세요.</p>
+        <button id="btn-play-again" class="btn-green hidden" style="margin-top: 6px;">🔄 다시 하기 (모두 대기실로)</button>
+        <button id="btn-back-waiting" class="hidden" style="margin-top: 6px;">⏪ 대기실로 돌아가기</button>
+        <button id="btn-leave-room-result" class="btn-red" style="margin-top: 6px;">🚪 방 나가기 (처음 화면으로)</button>
     </div>
+</div>
+
+<aside class="player-sidebar hidden" id="player-sidebar">
+    <h3 id="side-title">👥 참가자</h3>
+    <div id="side-player-list"></div>
+</aside>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -408,8 +435,8 @@
         return mode === 'chaos' ? generateChaosWordPool() : BASE_WORDS;
     }
 
-    let myId = localStorage.getItem('telestration_myId') || ('user_' + Math.random().toString(36).substr(2, 6));
-    localStorage.setItem('telestration_myId', myId);
+    let myId = sessionStorage.getItem('telestration_myId') || ('user_' + Math.random().toString(36).substr(2, 6));
+    sessionStorage.setItem('telestration_myId', myId);
 
     let myName = '';
     let myAvatar = AVATAR_POOL[Math.floor(Math.random() * AVATAR_POOL.length)];
@@ -424,7 +451,7 @@
     let activeBookId = '';
     let currentStepIndex = 0;
     let undoStack = [];
-    let previousPlayersKeys = [];
+    let returnedToWaiting = false;
 
     // 실시간 리스너 참조 (나갈 때 해제하기 위함)
     let roomRef = null;
@@ -600,7 +627,6 @@
             currentRound: 0,
             players: { [myId]: { name: myName, avatar: myAvatar, order: nowOrder } }
         }).then(() => {
-            previousPlayersKeys = [myId];
             listenRoom();
             listenChats();
         });
@@ -612,26 +638,64 @@
         if (!myName) return alert('닉네임을 입력해주세요!');
         if (roomCode.length !== 4) return alert('4자리 방 코드를 입력해주세요!');
 
-        db.ref(`rooms/${roomCode}`).once('value', snapshot => {
+        const code = roomCode;
+        db.ref(`rooms/${code}`).once('value', snapshot => {
             if (!snapshot.exists()) {
+                roomCode = '';
                 alert('존재하지 않는 방 코드입니다!');
                 return;
             }
             const roomData = snapshot.val();
-            const nowOrder = Date.now();
+            const alreadyIn = !!(roomData.players && roomData.players[myId]);
+            if (roomData.status !== 'waiting' && !alreadyIn) {
+                roomCode = '';
+                alert('이미 게임이 진행 중인 방이에요. 판이 끝난 뒤 다시 입장해주세요!');
+                return;
+            }
 
-            db.ref(`rooms/${roomCode}/players/${myId}`).set({
+            db.ref(`rooms/${code}/players/${myId}`).set({
                 name: myName,
                 avatar: myAvatar,
-                order: nowOrder
+                order: Date.now()
             }).then(() => {
-                previousPlayersKeys = roomData.players ? Object.keys(roomData.players) : [];
-                if (!previousPlayersKeys.includes(myId)) previousPlayersKeys.push(myId);
+                // 입장 알림은 입장한 본인이 딱 1번만 남김
+                if (!alreadyIn) pushNotice(code, `${myName}님이 입장했습니다.`);
                 listenRoom();
                 listenChats();
             });
         });
     });
+
+    function renderSidebar(room) {
+        const sidebar = document.getElementById('player-sidebar');
+        const list = document.getElementById('side-player-list');
+        const players = room.players || {};
+        const entries = Object.entries(players).sort((a, b) => (a[1].order || 0) - (b[1].order || 0));
+        const round = room.currentRound;
+        const subs = (room.submissions && room.submissions[round]) || {};
+
+        document.getElementById('side-title').innerText = `👥 참가자 (${entries.length})`;
+        list.innerHTML = '';
+        entries.forEach(([pid, p]) => {
+            const div = document.createElement('div');
+            div.className = 'side-player' + (pid === myId ? ' me' : '');
+            let status = '';
+            if (room.status === 'playing') status = subs[pid] ? '✅' : '✍️';
+            div.innerHTML = `<span>${p.avatar}</span><span class="side-name">${escapeHtml(p.name)}${pid === myId ? ' (나)' : ''}</span>${pid === room.host ? '<span>👑</span>' : ''}<span class="side-status">${status}</span>`;
+            list.appendChild(div);
+        });
+        sidebar.classList.remove('hidden');
+    }
+
+    function pushNotice(code, text) {
+        db.ref(`rooms/${code}/chats`).push({
+            name: '시스템',
+            avatar: '🔔',
+            text: text,
+            isNotice: true,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+    }
 
     function leaveRoom() {
         if (!roomCode) return;
@@ -642,12 +706,19 @@
         detachListeners();
         roomCode = '';
         currentRoomData = null;
-        previousPlayersKeys = [];
         lastRenderedRound = -1;
         activeBookId = '';
         currentStepIndex = 0;
         isHost = false;
+        returnedToWaiting = false;
+        document.getElementById('player-sidebar').classList.add('hidden');
+        ['chat-messages', 'game-chat-messages', 'result-chat-messages'].forEach(id => {
+            document.getElementById(id).innerHTML = '';
+        });
         showScreen('screen-lobby');
+
+        // 퇴장 알림은 나가는 본인이 딱 1번만 남김
+        pushNotice(code, `${myName}님이 방을 나갔습니다.`);
 
         db.ref(`rooms/${code}/players/${myId}`).remove().then(() => {
             db.ref(`rooms/${code}`).once('value', snapshot => {
@@ -687,6 +758,7 @@
 
             const currentPlayersKeys = Object.keys(room.players);
 
+            // 방장이 나가서 비어 있으면 가장 먼저 들어온 사람이 방장 승계
             if (!room.players[room.host] && currentPlayersKeys.length > 0) {
                 const sortedPlayers = Object.entries(room.players).sort((a, b) => a[1].order - b[1].order);
                 const newHostId = sortedPlayers[0][0];
@@ -695,38 +767,12 @@
                 }
             }
 
-            previousPlayersKeys.forEach(oldId => {
-                if (!currentPlayersKeys.includes(oldId) && room.playersLastState && room.playersLastState[oldId]) {
-                    const leftName = room.playersLastState[oldId].name;
-                    db.ref(`rooms/${roomCode}/chats`).push({
-                        name: '시스템',
-                        avatar: '🔔',
-                        text: `${leftName}님이 방을 나갔습니다.`,
-                        isNotice: true,
-                        timestamp: firebase.database.ServerValue.TIMESTAMP
-                    });
-                }
-            });
-
-            currentPlayersKeys.forEach(newId => {
-                if (!previousPlayersKeys.includes(newId) && newId !== myId) {
-                    const joinedName = room.players[newId].name;
-                    db.ref(`rooms/${roomCode}/chats`).push({
-                        name: '시스템',
-                        avatar: '🔔',
-                        text: `${joinedName}님이 입장했습니다.`,
-                        isNotice: true,
-                        timestamp: firebase.database.ServerValue.TIMESTAMP
-                    });
-                }
-            });
-
-            db.ref(`rooms/${roomCode}/playersLastState`).set(room.players);
-            previousPlayersKeys = currentPlayersKeys;
-
             currentRoomData = room;
             gameTimeLimit = room.timeLimit || 60;
             isHost = (room.host === myId);
+            renderSidebar(room);
+
+            if (room.status !== 'result') returnedToWaiting = false;
 
             if (room.status === 'waiting') {
                 lastRenderedRound = -1;
@@ -739,8 +785,13 @@
                 showScreen('screen-game');
                 renderGamePlay(room);
             } else if (room.status === 'result') {
-                showScreen('screen-result');
-                renderResultScreen(room);
+                if (returnedToWaiting) {
+                    showScreen('screen-waiting');
+                    renderWaitingRoom(room);
+                } else {
+                    showScreen('screen-result');
+                    renderResultScreen(room);
+                }
             }
         });
     }
@@ -780,9 +831,9 @@
         const playerListEl = document.getElementById('player-list');
         playerListEl.innerHTML = '';
         if (room.players) {
-            Object.values(room.players).forEach(p => {
+            Object.entries(room.players).sort((a, b) => (a[1].order || 0) - (b[1].order || 0)).forEach(([pid, p]) => {
                 const li = document.createElement('li');
-                li.innerHTML = `<span>${p.avatar}</span> <span>${p.name}</span> ${p.name === room.players[room.host]?.name ? '👑' : ''}`;
+                li.innerHTML = `<span>${p.avatar}</span> <span>${escapeHtml(p.name)}</span> ${pid === room.host ? '👑' : ''}`;
                 playerListEl.appendChild(li);
             });
         }
@@ -843,7 +894,8 @@
             spyId: spyId || 'none',
             spyWord: spyWord || 'none',
             normalWord: normalWord || 'none',
-            submissions: {}
+            submissions: {},
+            summaryRevealed: null
         });
     }
 
@@ -1090,20 +1142,24 @@
         const spySection = document.getElementById('spy-reveal-section');
         const spyRevealBtn = document.getElementById('btn-reveal-spy');
 
-        if (isHost && room.gameMode === 'spy') {
+        if (room.gameMode === 'spy') {
             spySection.classList.remove('hidden');
-            spyRevealBtn.classList.remove('hidden');
-        } else if (room.gameMode === 'spy') {
-            spySection.classList.remove('hidden');
-            spyRevealBtn.classList.add('hidden');
+            spyRevealBtn.classList.toggle('hidden', !isHost);
+        } else {
+            spySection.classList.add('hidden');
         }
 
-        // 방장에게만 '다시 하기' 노출, 참가자에게는 안내 문구 노출
+        // 버튼 노출: 방장은 '다시 하기', 참가자는 '대기실로 돌아가기'
         document.getElementById('btn-play-again').classList.toggle('hidden', !isHost);
+        document.getElementById('btn-back-waiting').classList.toggle('hidden', isHost);
         document.getElementById('guest-end-msg').classList.toggle('hidden', isHost);
 
-        summaryBox.classList.remove('hidden');
-        renderSummaryRows(room);
+        // 처음엔 스케치북만 보이고, 방장이 공개하면 모두에게 요약이 나타남
+        const revealed = !!room.summaryRevealed;
+        document.getElementById('btn-show-summary').classList.toggle('hidden', !(isHost && !revealed));
+        document.getElementById('summary-wait-msg').classList.toggle('hidden', isHost || revealed);
+        summaryBox.classList.toggle('hidden', !revealed);
+        if (revealed) renderSummaryRows(room);
         renderCurrentBookPage(room);
     }
 
@@ -1217,8 +1273,20 @@
             submissions: null,
             spyId: null,
             spyWord: null,
-            normalWord: null
+            normalWord: null,
+            summaryRevealed: null
         });
+    });
+
+    document.getElementById('btn-show-summary').addEventListener('click', () => {
+        if (!isHost || !roomCode) return;
+        db.ref(`rooms/${roomCode}`).update({ summaryRevealed: true });
+    });
+
+    document.getElementById('btn-back-waiting').addEventListener('click', () => {
+        returnedToWaiting = true;
+        showScreen('screen-waiting');
+        if (currentRoomData) renderWaitingRoom(currentRoomData);
     });
 
     function setupChat(inputId, sendBtnId) {
