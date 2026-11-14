@@ -438,4 +438,521 @@
     const firebaseConfig = {
         apiKey: "AIzaSyD3vtdGXBmT0AhhOnDhRxtVSKyvVagv1AY",
         authDomain: "telestration-ac12f.firebaseapp.com",
-        databaseURL: "
+        databaseURL: "https://telestration-ac12f-default-rtdb.firebaseio.com",
+        projectId: "telestration-ac12f",
+        storageBucket: "telestration-ac12f.firebasestorage.app",
+        messagingSenderId: "383833654591",
+        appId: "1:383833654591:web:07d1665be65de375343f8a",
+        measurementId: "G-JT0ZJZ85QW"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const WORD_POOL = [
+        "자유의 여신상", "선풍기", "피카츄", "유니콘", "고슴도치", "펭귄", "가위바위보",
+        "인어공주", "로켓 발사", "바나나 껍질", "해리포터", "스파이더맨", "탕후루",
+        "붕어빵", "롤러코스터", "우주비행사", "아이스크림", "북극곰", "치킨과 맥주",
+        "스마트폰", "자전거", "해바라기", "드라큘라", "캠핑카", "공룡"
+    ];
+
+    let myId = 'user_' + Math.random().toString(36).substr(2, 6);
+    let myName = '';
+    let myAvatar = '🐶';
+    let roomCode = '';
+    let isHost = false;
+    let currentRoomData = null;
+    let lastRenderedRound = -1;
+
+    let timerInterval = null;
+    const TIME_LIMIT = 30;
+
+    // 결과 화면 스케치북 페이지 상태
+    let activeBookSteps = [];
+    let currentStepIndex = 0;
+
+    // 아바타 선택 이벤트
+    document.querySelectorAll('.avatar-option').forEach(el => {
+        el.addEventListener('click', () => {
+            document.querySelectorAll('.avatar-option').forEach(o => o.classList.remove('selected'));
+            el.classList.add('selected');
+            myAvatar = el.getAttribute('data-avatar');
+        });
+    });
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let brushColor = '#2c3e50';
+    let brushSize = 4;
+    let isEraserMode = false;
+
+    function initCanvas() {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+    }
+
+    function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const clientX = e.clientX ?? e.touches[0].clientX;
+        const clientY = e.clientY ?? e.touches[0].clientY;
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
+    }
+
+    canvas.addEventListener('mousedown', (e) => { isDrawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+    canvas.addEventListener('mousemove', (e) => {
+        if (!isDrawing) return;
+        const p = getPos(e);
+        ctx.strokeStyle = isEraserMode ? '#ffffff' : brushColor;
+        ctx.lineWidth = brushSize;
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+    });
+    canvas.addEventListener('mouseup', () => isDrawing = false);
+    canvas.addEventListener('mouseleave', () => isDrawing = false);
+
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); isDrawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }, { passive: false });
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!isDrawing) return;
+        const p = getPos(e);
+        ctx.strokeStyle = isEraserMode ? '#ffffff' : brushColor;
+        ctx.lineWidth = brushSize;
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+    }, { passive: false });
+    canvas.addEventListener('touchend', () => isDrawing = false);
+
+    // 색상 버튼 선택
+    document.querySelectorAll('.color-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            brushColor = btn.getAttribute('data-color');
+            isEraserMode = false;
+            document.getElementById('btn-eraser').classList.remove('active');
+        });
+    });
+
+    // 컬러 팔레트 선택
+    document.getElementById('color-picker').addEventListener('input', (e) => {
+        brushColor = e.target.value;
+        isEraserMode = false;
+        document.getElementById('btn-eraser').classList.remove('active');
+    });
+
+    // 선 굵기 슬라이더 조절
+    const sizeSlider = document.getElementById('brush-size-slider');
+    const sizeLabel = document.getElementById('brush-size-label');
+    sizeSlider.addEventListener('input', (e) => {
+        brushSize = parseInt(e.target.value, 10);
+        sizeLabel.innerText = `${brushSize}px`;
+    });
+
+    // 지우개 모드
+    document.getElementById('btn-eraser').addEventListener('click', () => {
+        isEraserMode = true;
+        document.getElementById('btn-eraser').classList.add('active');
+        if (brushSize < 12) {
+            brushSize = 16;
+            sizeSlider.value = 16;
+            sizeLabel.innerText = '16px';
+        }
+    });
+
+    document.getElementById('btn-clear').addEventListener('click', () => initCanvas());
+
+    // 방 코드 복사 버튼
+    document.getElementById('btn-copy-code').addEventListener('click', () => {
+        navigator.clipboard.writeText(roomCode).then(() => {
+            const btn = document.getElementById('btn-copy-code');
+            btn.innerText = '복사 완료! 🎉';
+            btn.style.backgroundColor = '#2ecc71';
+            setTimeout(() => {
+                btn.innerText = '코드 복사';
+                btn.style.backgroundColor = '#95a5a6';
+            }, 2000);
+        });
+    });
+
+    function showScreen(screenId) {
+        ['screen-lobby', 'screen-waiting', 'screen-game', 'screen-result'].forEach(id => {
+            document.getElementById(id).classList.add('hidden');
+        });
+        document.getElementById(screenId).classList.remove('hidden');
+    }
+
+    document.getElementById('btn-create-room').addEventListener('click', () => {
+        myName = document.getElementById('nickname').value.trim();
+        if (!myName) {
+            alert('닉네임을 입력해주세요!');
+            return;
+        }
+
+        roomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+        isHost = true;
+
+        db.ref(`rooms/${roomCode}`).set({
+            host: myId,
+            status: 'waiting',
+            currentRound: 0,
+            players: { [myId]: { name: myName, avatar: myAvatar, order: 0 } }
+        }).then(() => {
+            listenRoom();
+        }).catch((err) => {
+            alert('방 생성 실패: ' + err.message);
+        });
+    });
+
+    document.getElementById('btn-join-room').addEventListener('click', () => {
+        myName = document.getElementById('nickname').value.trim();
+        roomCode = document.getElementById('room-code-input').value.trim().toUpperCase();
+        if (!myName) {
+            alert('닉네임을 입력해주세요!');
+            return;
+        }
+        if (roomCode.length !== 4) {
+            alert('4자리 방 코드를 입력해주세요!');
+            return;
+        }
+
+        db.ref(`rooms/${roomCode}`).get().then((snapshot) => {
+            if (!snapshot.exists()) {
+                alert('존재하지 않는 방 코드입니다.');
+                return;
+            }
+
+            const data = snapshot.val();
+            if (data.status !== 'waiting' && data.status !== 'playing') {
+                alert('이미 종료되었거나 잘못된 방입니다.');
+                return;
+            }
+
+            const playerCount = Object.keys(data.players || {}).length;
+            db.ref(`rooms/${roomCode}/players`).update({
+                [myId]: { name: myName, avatar: myAvatar, order: playerCount }
+            }).then(() => {
+                listenRoom();
+            });
+        }).catch((err) => {
+            alert('입장 중 오류 발생: ' + err.message);
+        });
+    });
+
+    document.getElementById('btn-start-game').addEventListener('click', () => {
+        const playerIds = Object.keys(currentRoomData.players).sort((a, b) => currentRoomData.players[a].order - currentRoomData.players[b].order);
+        const shuffledWords = [...WORD_POOL].sort(() => Math.random() - 0.5);
+
+        const books = {};
+        playerIds.forEach((pid, idx) => {
+            books[pid] = {
+                ownerName: currentRoomData.players[pid].name,
+                steps: {
+                    0: { type: 'word', author: '랜덤 제시어', content: shuffledWords[idx % shuffledWords.length] }
+                }
+            };
+        });
+
+        db.ref(`rooms/${roomCode}`).update({
+            status: 'playing',
+            currentRound: 1,
+            books: books,
+            submissions: null
+        });
+    });
+
+    document.getElementById('btn-play-again').addEventListener('click', () => {
+        lastRenderedRound = -1;
+        db.ref(`rooms/${roomCode}`).update({
+            status: 'waiting',
+            currentRound: 0,
+            books: null,
+            submissions: null
+        });
+    });
+
+    document.getElementById('btn-submit-draw').addEventListener('click', submitTurn);
+    document.getElementById('btn-submit-guess').addEventListener('click', submitTurn);
+    document.getElementById('btn-restart').addEventListener('click', () => location.reload());
+
+    function sendChat() {
+        const input = document.getElementById('chat-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const chatRef = db.ref(`rooms/${roomCode}/chats`);
+        chatRef.push({
+            name: myName,
+            avatar: myAvatar,
+            message: text,
+            time: Date.now()
+        });
+        input.value = '';
+    }
+
+    document.getElementById('btn-send-chat').addEventListener('click', sendChat);
+    document.getElementById('chat-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendChat();
+    });
+
+    function listenRoom() {
+        db.ref(`rooms/${roomCode}`).on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+            currentRoomData = data;
+
+            const playerIds = Object.keys(data.players || {}).sort((a, b) => data.players[a].order - data.players[b].order);
+
+            const chatMsgsEl = document.getElementById('chat-messages');
+            if (data.chats) {
+                const chatArr = Object.values(data.chats);
+                chatMsgsEl.innerHTML = chatArr.map(c => `<div class="chat-msg"><span>${c.avatar || '🐶'}</span> <b>${c.name}:</b> ${c.message}</div>`).join('');
+                chatMsgsEl.scrollTop = chatMsgsEl.scrollHeight;
+            } else {
+                chatMsgsEl.innerHTML = '<div style="color:#adb5bd; text-align:center; padding-top:20px;">채팅을 시작해보세요!</div>';
+            }
+
+            if (data.status === 'waiting') {
+                stopTimer();
+                lastRenderedRound = -1;
+                showScreen('screen-waiting');
+                document.getElementById('display-room-code').innerText = roomCode;
+                
+                const listEl = document.getElementById('player-list');
+                listEl.innerHTML = playerIds.map(id => {
+                    const p = data.players[id];
+                    return `<li><span>${p.avatar || '🐶'}</span> ${p.name} ${id === data.host ? '👑' : ''}</li>`;
+                }).join('');
+
+                if (isHost || data.host === myId) {
+                    isHost = true;
+                    document.getElementById('btn-start-game').classList.remove('hidden');
+                    document.getElementById('btn-start-game').disabled = playerIds.length < 2;
+                    document.getElementById('waiting-host-msg').classList.add('hidden');
+                } else {
+                    document.getElementById('btn-start-game').classList.add('hidden');
+                    document.getElementById('waiting-host-msg').classList.remove('hidden');
+                }
+            } 
+            else if (data.status === 'playing') {
+                showScreen('screen-game');
+                const round = data.currentRound;
+                const totalRounds = playerIds.length;
+                document.getElementById('round-indicator').innerText = `라운드 ${round} / ${totalRounds}`;
+
+                const submissions = (data.submissions && data.submissions[round]) || {};
+                const submittedCount = Object.keys(submissions).length;
+                document.getElementById('submit-status').innerText = `제출 현황: ${submittedCount} / ${totalRounds}`;
+
+                if (isHost && submittedCount === totalRounds) {
+                    stopTimer();
+                    advanceRound(data, playerIds);
+                    return;
+                }
+
+                if (submissions[myId]) {
+                    stopTimer();
+                    document.getElementById('mode-draw').classList.add('hidden');
+                    document.getElementById('mode-guess').classList.add('hidden');
+                    document.getElementById('mode-wait-turn').classList.remove('hidden');
+                    document.getElementById('timer-display').innerText = '✅ 제출 완료!';
+                } else if (lastRenderedRound !== round) {
+                    lastRenderedRound = round;
+                    setupMyTurn(data, playerIds, round);
+                }
+            } 
+            else if (data.status === 'finished') {
+                stopTimer();
+                showScreen('screen-result');
+                renderResults(data, playerIds);
+            }
+        });
+    }
+
+    function setupMyTurn(data, playerIds, round) {
+        document.getElementById('mode-wait-turn').classList.add('hidden');
+        const myIndex = playerIds.indexOf(myId);
+        const n = playerIds.length;
+        
+        const targetBookIndex = (myIndex - (round - 1) + n) % n;
+        const targetBookOwnerId = playerIds[targetBookIndex];
+        const prevStep = data.books[targetBookOwnerId].steps[round - 1];
+
+        if (prevStep.type === 'word') {
+            document.getElementById('mode-guess').classList.add('hidden');
+            document.getElementById('mode-draw').classList.remove('hidden');
+            document.getElementById('draw-clue-text').innerText = prevStep.content;
+            initCanvas();
+        } else {
+            document.getElementById('mode-draw').classList.add('hidden');
+            document.getElementById('mode-guess').classList.remove('hidden');
+            document.getElementById('guess-image').src = prevStep.content;
+            document.getElementById('guess-input').value = '';
+        }
+
+        startTimer();
+    }
+
+    function startTimer() {
+        stopTimer();
+        let timeLeft = TIME_LIMIT;
+        const timerEl = document.getElementById('timer-display');
+        timerEl.innerText = `⏳ 남은 시간: ${timeLeft}초`;
+
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            timerEl.innerText = `⏳ 남은 시간: ${timeLeft}초`;
+
+            if (timeLeft <= 0) {
+                stopTimer();
+                autoSubmitTimeout();
+            }
+        }, 1000);
+    }
+
+    function stopTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+    }
+
+    function autoSubmitTimeout() {
+        const round = currentRoomData.currentRound;
+        const submissions = (currentRoomData.submissions && currentRoomData.submissions[round]) || {};
+        if (submissions[myId]) return;
+
+        const playerIds = Object.keys(currentRoomData.players).sort((a, b) => currentRoomData.players[a].order - currentRoomData.players[b].order);
+        const myIndex = playerIds.indexOf(myId);
+        const n = playerIds.length;
+        const targetBookOwnerId = playerIds[(myIndex - (round - 1) + n) % n];
+        const prevStep = currentRoomData.books[targetBookOwnerId].steps[round - 1];
+
+        let newStep = null;
+        if (prevStep.type === 'word') {
+            const imgData = canvas.toDataURL('image/png', 0.7);
+            newStep = { type: 'drawing', author: `${myAvatar} ${myName} (시간초과)`, content: imgData };
+        } else {
+            const guessText = document.getElementById('guess-input').value.trim() || '시간초과';
+            newStep = { type: 'word', author: `${myAvatar} ${myName} (시간초과)`, content: guessText };
+        }
+
+        db.ref(`rooms/${roomCode}/books/${targetBookOwnerId}/steps`).update({
+            [round]: newStep
+        }).then(() => {
+            db.ref(`rooms/${roomCode}/submissions/${round}`).update({
+                [myId]: true
+            });
+        });
+    }
+
+    function submitTurn() {
+        stopTimer();
+        const round = currentRoomData.currentRound;
+        const playerIds = Object.keys(currentRoomData.players).sort((a, b) => currentRoomData.players[a].order - currentRoomData.players[b].order);
+        const myIndex = playerIds.indexOf(myId);
+        const n = playerIds.length;
+        const targetBookOwnerId = playerIds[(myIndex - (round - 1) + n) % n];
+        const prevStep = currentRoomData.books[targetBookOwnerId].steps[round - 1];
+
+        let newStep = null;
+        if (prevStep.type === 'word') {
+            const imgData = canvas.toDataURL('image/png', 0.7);
+            newStep = { type: 'drawing', author: `${myAvatar} ${myName}`, content: imgData };
+        } else {
+            const guessText = document.getElementById('guess-input').value.trim();
+            if (!guessText) {
+                startTimer();
+                return alert('정답 단어를 입력해주세요!');
+            }
+            newStep = { type: 'word', author: `${myAvatar} ${myName}`, content: guessText };
+        }
+
+        db.ref(`rooms/${roomCode}/books/${targetBookOwnerId}/steps`).update({
+            [round]: newStep
+        }).then(() => {
+            db.ref(`rooms/${roomCode}/submissions/${round}`).update({
+                [myId]: true
+            });
+        });
+    }
+
+    function advanceRound(data, playerIds) {
+        const nextRound = data.currentRound + 1;
+        if (nextRound > playerIds.length) {
+            db.ref(`rooms/${roomCode}`).update({ status: 'finished' });
+        } else {
+            db.ref(`rooms/${roomCode}`).update({ currentRound: nextRound });
+        }
+    }
+
+    // 결과 발표: 스케치북 탭 및 한 장씩 넘겨보기 초기화
+    function renderResults(data, playerIds) {
+        const tabsEl = document.getElementById('book-tabs');
+        tabsEl.innerHTML = '';
+
+        playerIds.forEach((pid, idx) => {
+            const btn = document.createElement('button');
+            btn.innerText = `${data.books[pid].ownerName}의 스케치북`;
+            btn.onclick = () => selectSketchbook(data.books[pid], btn);
+            tabsEl.appendChild(btn);
+            if (idx === 0) selectSketchbook(data.books[pid], btn);
+        });
+    }
+
+    function selectSketchbook(book, activeBtn) {
+        document.querySelectorAll('#book-tabs button').forEach(b => b.classList.remove('active'));
+        activeBtn.classList.add('active');
+
+        activeBookSteps = Object.values(book.steps);
+        currentStepIndex = 0;
+        renderCurrentPage();
+    }
+
+    function renderCurrentPage() {
+        const total = activeBookSteps.length;
+        const step = activeBookSteps[currentStepIndex];
+        
+        const authorEl = document.getElementById('page-author');
+        const counterEl = document.getElementById('page-counter');
+        const bodyEl = document.getElementById('page-body');
+
+        counterEl.innerText = `${currentStepIndex + 1} / ${total} 페이지`;
+
+        if (currentStepIndex === 0) {
+            authorEl.innerText = '🎯 최초 제시어';
+            bodyEl.innerHTML = `<div class="big-word-card">${step.content}</div>`;
+        } else if (step.type === 'drawing') {
+            authorEl.innerText = `🎨 ${step.author}의 그림`;
+            bodyEl.innerHTML = `<img src="${step.content}" class="preview-img" style="max-height: 250px;">`;
+        } else {
+            authorEl.innerText = `💬 ${step.author}의 추측`;
+            bodyEl.innerHTML = `<div class="big-word-card" style="background:#e8f4fd; border-color:#3498db; color:#2980b9;">${step.content}</div>`;
+        }
+
+        document.getElementById('btn-prev-page').disabled = currentStepIndex === 0;
+        document.getElementById('btn-next-page').disabled = currentStepIndex === total - 1;
+    }
+
+    document.getElementById('btn-prev-page').addEventListener('click', () => {
+        if (currentStepIndex > 0) {
+            currentStepIndex--;
+            renderCurrentPage();
+        }
+    });
+
+    document.getElementById('btn-next-page').addEventListener('click', () => {
+        if (currentStepIndex < activeBookSteps.length - 1) {
+            currentStepIndex++;
+            renderCurrentPage();
+        }
+    });
+</script>
+
+</body>
+</html>
