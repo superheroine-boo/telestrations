@@ -281,8 +281,9 @@
             </div>
         </div>
 
-        <button id="btn-play-again" class="btn-green hidden" style="margin-top: 6px;">다음 판 바로 시작하기 (대기실로)</button>
-        <button id="btn-leave-room-result" class="btn-red" style="margin-top: 6px;">🚪 로비로 나가기</button>
+        <p id="guest-end-msg" class="hidden" style="color: #95a5a6; font-size: 13px; margin: 8px 0 0;">방장이 다시 할지 나갈지 선택할 때까지 기다려주세요...</p>
+        <button id="btn-play-again" class="btn-green hidden" style="margin-top: 6px;">🔄 다시 하기 (대기실로)</button>
+        <button id="btn-leave-room-result" class="btn-red" style="margin-top: 6px;">🚪 나가기 (로비로)</button>
     </div>
 </div>
 
@@ -424,6 +425,20 @@
     let currentStepIndex = 0;
     let undoStack = [];
     let previousPlayersKeys = [];
+
+    // 실시간 리스너 참조 (나갈 때 해제하기 위함)
+    let roomRef = null;
+    let chatsRef = null;
+
+    function detachListenersRoomOnly() {
+        if (roomRef) { roomRef.off(); roomRef = null; }
+    }
+
+    function detachListeners() {
+        if (roomRef) { roomRef.off(); roomRef = null; }
+        if (chatsRef) { chatsRef.off(); chatsRef = null; }
+        if (timerInterval) clearInterval(timerInterval);
+    }
 
     document.getElementById('avatar-preview').innerText = myAvatar;
     document.getElementById('btn-random-avatar').addEventListener('click', () => {
@@ -620,20 +635,30 @@
 
     function leaveRoom() {
         if (!roomCode) return;
-        db.ref(`rooms/${roomCode}/players/${myId}`).remove().then(() => {
-            db.ref(`rooms/${roomCode}`).once('value', snapshot => {
+        const code = roomCode;
+        const wasHost = isHost;
+
+        // 먼저 리스너를 해제해서 화면이 다시 덮어씌워지는 문제를 방지
+        detachListeners();
+        roomCode = '';
+        currentRoomData = null;
+        previousPlayersKeys = [];
+        lastRenderedRound = -1;
+        activeBookId = '';
+        currentStepIndex = 0;
+        isHost = false;
+        showScreen('screen-lobby');
+
+        db.ref(`rooms/${code}/players/${myId}`).remove().then(() => {
+            db.ref(`rooms/${code}`).once('value', snapshot => {
                 const room = snapshot.val();
-                if (!room || !room.players || Object.keys(room.players).length === 0) {
-                    db.ref(`rooms/${roomCode}`).remove();
-                } else if (room.host === myId) {
-                    const remainingPlayers = Object.entries(room.players);
-                    remainingPlayers.sort((a, b) => a[1].order - b[1].order);
-                    const nextHostId = remainingPlayers[0][0];
-                    db.ref(`rooms/${roomCode}`).update({ host: nextHostId });
+                if (!room) return;
+                if (!room.players || Object.keys(room.players).length === 0) {
+                    db.ref(`rooms/${code}`).remove();
+                } else if (wasHost || room.host === myId) {
+                    const remaining = Object.entries(room.players).sort((a, b) => a[1].order - b[1].order);
+                    db.ref(`rooms/${code}`).update({ host: remaining[0][0] });
                 }
-                roomCode = '';
-                previousPlayersKeys = [];
-                showScreen('screen-lobby');
             });
         });
     }
@@ -653,56 +678,61 @@
     });
 
     function listenRoom() {
-        db.ref(`rooms/${roomCode}`).on('value', snapshot => {
+        detachListenersRoomOnly();
+        roomRef = db.ref(`rooms/${roomCode}`);
+        roomRef.on('value', snapshot => {
             const room = snapshot.val();
-            if (!room) return;
+            if (!room || !roomCode) return;                    // 나간 뒤에는 무시
+            if (!room.players || !room.players[myId]) return;  // 내가 방에 없으면 무시
 
-            if (room.players) {
-                const currentPlayersKeys = Object.keys(room.players);
+            const currentPlayersKeys = Object.keys(room.players);
 
-                if (!room.players[room.host] && currentPlayersKeys.length > 0) {
-                    const sortedPlayers = Object.entries(room.players).sort((a, b) => a[1].order - b[1].order);
-                    const newHostId = sortedPlayers[0][0];
-                    if (newHostId === myId && room.host !== myId) {
-                        db.ref(`rooms/${roomCode}`).update({ host: newHostId });
-                    }
+            if (!room.players[room.host] && currentPlayersKeys.length > 0) {
+                const sortedPlayers = Object.entries(room.players).sort((a, b) => a[1].order - b[1].order);
+                const newHostId = sortedPlayers[0][0];
+                if (newHostId === myId && room.host !== myId) {
+                    db.ref(`rooms/${roomCode}`).update({ host: newHostId });
                 }
-
-                previousPlayersKeys.forEach(oldId => {
-                    if (!currentPlayersKeys.includes(oldId) && room.playersLastState && room.playersLastState[oldId]) {
-                        const leftName = room.playersLastState[oldId].name;
-                        db.ref(`rooms/${roomCode}/chats`).push({
-                            name: '시스템',
-                            avatar: '🔔',
-                            text: `${leftName}님이 방을 나갔습니다.`,
-                            isNotice: true,
-                            timestamp: firebase.database.ServerValue.TIMESTAMP
-                        });
-                    }
-                });
-
-                currentPlayersKeys.forEach(newId => {
-                    if (!previousPlayersKeys.includes(newId) && newId !== myId) {
-                        const joinedName = room.players[newId].name;
-                        db.ref(`rooms/${roomCode}/chats`).push({
-                            name: '시스템',
-                            avatar: '🔔',
-                            text: `${joinedName}님이 입장했습니다.`,
-                            isNotice: true,
-                            timestamp: firebase.database.ServerValue.TIMESTAMP
-                        });
-                    }
-                });
-
-                db.ref(`rooms/${roomCode}/playersLastState`).set(room.players);
-                previousPlayersKeys = currentPlayersKeys;
             }
+
+            previousPlayersKeys.forEach(oldId => {
+                if (!currentPlayersKeys.includes(oldId) && room.playersLastState && room.playersLastState[oldId]) {
+                    const leftName = room.playersLastState[oldId].name;
+                    db.ref(`rooms/${roomCode}/chats`).push({
+                        name: '시스템',
+                        avatar: '🔔',
+                        text: `${leftName}님이 방을 나갔습니다.`,
+                        isNotice: true,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+            });
+
+            currentPlayersKeys.forEach(newId => {
+                if (!previousPlayersKeys.includes(newId) && newId !== myId) {
+                    const joinedName = room.players[newId].name;
+                    db.ref(`rooms/${roomCode}/chats`).push({
+                        name: '시스템',
+                        avatar: '🔔',
+                        text: `${joinedName}님이 입장했습니다.`,
+                        isNotice: true,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+            });
+
+            db.ref(`rooms/${roomCode}/playersLastState`).set(room.players);
+            previousPlayersKeys = currentPlayersKeys;
 
             currentRoomData = room;
             gameTimeLimit = room.timeLimit || 60;
             isHost = (room.host === myId);
 
             if (room.status === 'waiting') {
+                lastRenderedRound = -1;
+                activeBookId = '';
+                currentStepIndex = 0;
+                document.getElementById('spy-reveal-result').classList.add('hidden');
                 showScreen('screen-waiting');
                 renderWaitingRoom(room);
             } else if (room.status === 'playing') {
@@ -717,7 +747,7 @@
 
     function renderWaitingRoom(room) {
         document.getElementById('display-room-code').innerText = roomCode;
-        
+
         const hostSettingsEl = document.getElementById('host-settings');
         const startBtnEl = document.getElementById('btn-start-game');
         const waitingMsgEl = document.getElementById('waiting-host-msg');
@@ -738,7 +768,7 @@
             hostSettingsEl.classList.remove('hidden');
             startBtnEl.classList.remove('hidden');
             waitingMsgEl.classList.add('hidden');
-            
+
             document.getElementById('game-mode-select').value = room.gameMode || 'normal';
             document.getElementById('time-limit-select').value = room.timeLimit || 60;
         } else {
@@ -769,7 +799,7 @@
     function startGameSession(playerIds, mode) {
         const wordPool = getWordPool(mode);
         const shuffledPlayers = [...playerIds].sort(() => Math.random() - 0.5);
-        
+
         let books = {};
         let spyId = null;
         let spyWord = null;
@@ -778,7 +808,7 @@
         if (mode === 'spy') {
             const spyIndex = Math.floor(Math.random() * shuffledPlayers.length);
             spyId = shuffledPlayers[spyIndex];
-            
+
             let w1 = wordPool[Math.floor(Math.random() * wordPool.length)];
             let w2 = wordPool[Math.floor(Math.random() * wordPool.length)];
             while (w1 === w2) {
@@ -820,7 +850,7 @@
     function renderGamePlay(room) {
         const round = room.currentRound;
         const totalRounds = room.totalRounds;
-        
+
         document.getElementById('round-indicator').innerText = `라운드 ${round} / ${totalRounds}`;
 
         if (lastRenderedRound !== round) {
@@ -850,7 +880,7 @@
 
         const playerIds = Object.keys(room.players).sort();
         const myIndex = playerIds.indexOf(myId);
-        
+
         const assignedPlayerIndex = (myIndex + (round - 1)) % playerIds.length;
         const targetBookOwner = playerIds[assignedPlayerIndex];
         const targetBookId = 'book_' + targetBookOwner;
@@ -1068,6 +1098,10 @@
             spyRevealBtn.classList.add('hidden');
         }
 
+        // 방장에게만 '다시 하기' 노출, 참가자에게는 안내 문구 노출
+        document.getElementById('btn-play-again').classList.toggle('hidden', !isHost);
+        document.getElementById('guest-end-msg').classList.toggle('hidden', isHost);
+
         summaryBox.classList.remove('hidden');
         renderSummaryRows(room);
         renderCurrentBookPage(room);
@@ -1137,7 +1171,7 @@
             const row = document.createElement('div');
             row.className = 'summary-row';
             row.innerHTML = `<div><strong>${ownerName}</strong>: 시작 「${startWord}」 ➡️ 최종 「${endWord}」</div>`;
-            
+
             const stepsPreview = document.createElement('div');
             stepsPreview.className = 'summary-steps-preview';
             [...pageKeys].reverse().forEach(pk => {
@@ -1173,13 +1207,17 @@
         });
     }
 
-    document.getElementById('btn-play-again')?.addEventListener('click', () => {
+    document.getElementById('btn-play-again').addEventListener('click', () => {
         if (!isHost) return;
         db.ref(`rooms/${roomCode}`).update({
             status: 'waiting',
             currentRound: 0,
+            totalRounds: null,
             books: null,
-            submissions: null
+            submissions: null,
+            spyId: null,
+            spyWord: null,
+            normalWord: null
         });
     });
 
@@ -1212,11 +1250,11 @@
     setupChat('result-chat-input', 'btn-send-result-chat');
 
     function listenChats() {
-        db.ref(`rooms/${roomCode}/chats`).on('value', snapshot => {
+        if (chatsRef) chatsRef.off();
+        chatsRef = db.ref(`rooms/${roomCode}/chats`);
+        chatsRef.on('value', snapshot => {
             const chatsObj = snapshot.val();
-            if (chatsObj) {
-                renderChats(chatsObj);
-            }
+            if (chatsObj) renderChats(chatsObj);
         });
     }
 
